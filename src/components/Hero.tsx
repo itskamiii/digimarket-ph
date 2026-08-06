@@ -1,6 +1,6 @@
 import { motion, useReducedMotion } from "framer-motion";
-import { ArrowRight, Play, Sparkles, Star, Zap } from "lucide-react";
-import heroCamera from "../assets/hero-camera.jpg";
+import { ArrowRight, Play, Sparkles, Zap } from "lucide-react";
+import heroCamera from "../assets/27th-collection.jpg";
 import { EASE } from "./Reveal";
 
 const container = {
@@ -60,7 +60,7 @@ export default function Hero() {
           <motion.div variants={item} className="flex justify-center lg:justify-start">
             <span className="inline-flex items-center gap-2.5 rounded-full border border-ink-900/10 bg-cream-50/80 px-4 py-2 font-mono text-[11px] font-bold uppercase tracking-[0.2em] text-ink-700 shadow-sm backdrop-blur">
               <span className="h-2 w-2 rounded-full bg-flash-500 animate-pulse-dot" />
-              New drop · 14 restored units live
+              14 Units Live
               <span className="rounded-full bg-ink-900 px-2 py-0.5 text-[9px] text-cream-50">+40</span>
             </span>
           </motion.div>
@@ -95,7 +95,7 @@ export default function Hero() {
             variants={item}
             className="mx-auto mt-6 max-w-xl text-base leading-relaxed text-ink-500 sm:text-lg lg:mx-0"
           >
-            Hand-restored vintage digital cameras with real CCD sensors, real flash, real
+            Vintage digital cameras with real CCD sensors, real flash, real
             nostalgia. No filters, no presets — just point, flash, and post.
           </motion.p>
 
@@ -120,39 +120,6 @@ export default function Hero() {
               Why digicam?
             </a>
           </motion.div>
-
-          {/* Trust row */}
-          <motion.div
-            variants={item}
-            className="mt-10 flex flex-col items-center gap-4 sm:flex-row sm:justify-center lg:justify-start"
-          >
-            <div className="flex -space-x-2.5" aria-hidden="true">
-              {[
-                "from-flash-500 to-flash-300",
-                "from-ink-800 to-ink-500",
-                "from-lcd-500 to-lcd-400",
-                "from-flash-300 to-flash-100",
-              ].map((g, i) => (
-                <span
-                  key={i}
-                  className={`flex h-9 w-9 items-center justify-center rounded-full bg-gradient-to-br ${g} font-mono text-[10px] font-bold text-cream-50 ring-2 ring-cream-100`}
-                >
-                  {"MKBS"[i]}
-                </span>
-              ))}
-            </div>
-            <div className="text-center sm:text-left">
-              <div className="flex items-center justify-center gap-1 sm:justify-start" aria-label="4.9 out of 5 stars">
-                {Array.from({ length: 5 }).map((_, i) => (
-                  <Star key={i} className="h-3.5 w-3.5 fill-flash-500 text-flash-500" />
-                ))}
-                <span className="ml-1.5 font-mono text-xs font-bold text-ink-900">4.9</span>
-              </div>
-              <p className="mt-0.5 text-xs text-ink-400">
-                from 2,400+ Gen-Z shooters · Next-day delivery in Metro Manila
-              </p>
-            </div>
-          </motion.div>
         </motion.div>
 
         {/* Visual */}
@@ -173,21 +140,20 @@ export default function Hero() {
           <div className="relative overflow-hidden rounded-[2.5rem] border border-ink-900/10 bg-cream-50 shadow-[0_40px_90px_-30px_rgba(27,23,18,0.45)]">
             <img
               src={heroCamera}
-              alt="Silver vintage digital camera with pop-up flash, restored by Digimarket_PH"
+              alt="Flatlay of the 27th Collection — ten restored vintage digital cameras with a leather case, styled by Digimarket_PH"
               className="aspect-[4/5] w-full object-cover"
               width={880}
               height={1100}
             />
-            {/* Camera UI overlay strip */}
+            {/* Collection info overlay strip */}
             <div className="absolute inset-x-4 bottom-4 rounded-2xl glass px-4 py-3 shadow-lg">
               <div className="flex items-center justify-between font-mono text-[10px] font-bold uppercase tracking-[0.18em] text-ink-700 sm:text-[11px]">
                 <span className="flex items-center gap-1.5">
                   <span className="h-1.5 w-1.5 rounded-full bg-flash-500 animate-pulse-dot" />
-                  IMG_2041.JPG
+                  27TH_COLLECTION.JPG
                 </span>
-                <span>10.1 MP</span>
                 <span className="flex items-center gap-1 text-lcd-500">
-                  <Zap className="h-3 w-3 fill-current" /> FLASH ON
+                  <Zap className="h-3 w-3 fill-current" /> NEW DROP
                 </span>
               </div>
             </div>
@@ -201,8 +167,8 @@ export default function Hero() {
             className="absolute -left-3 top-10 sm:-left-8"
           >
             <div className="animate-float rounded-2xl glass px-4 py-3 shadow-xl shadow-ink-900/10">
-              <p className="font-mono text-[9px] font-bold uppercase tracking-[0.2em] text-ink-400">Sensor</p>
-              <p className="mt-0.5 font-display text-sm font-bold text-ink-900">CCD · 2004</p>
+              <p className="font-mono text-[9px] font-bold uppercase tracking-[0.2em] text-ink-400">Collection</p>
+              <p className="mt-0.5 font-display text-sm font-bold text-ink-900">27th</p>
             </div>
           </motion.div>
 
@@ -232,11 +198,9 @@ export default function Hero() {
               </span>
               <div>
                 <p className="font-mono text-[9px] font-bold uppercase tracking-[0.2em] text-cream-100/60">
-                  From
+                  Price starts from:
                 </p>
-                <p className="font-display text-lg font-bold leading-none">
-                  ₱2,990 <span className="text-xs font-medium text-cream-100/50 line-through">₱3,990</span>
-                </p>
+                <p className="font-display text-lg font-bold leading-none">₱4,599</p>
               </div>
             </div>
           </motion.div>

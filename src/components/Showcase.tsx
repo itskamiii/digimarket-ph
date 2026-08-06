@@ -70,7 +70,7 @@ function CameraCard({ camera }: { camera: Camera }) {
           <div>
             <h3 className="font-display text-lg font-bold tracking-tight text-ink-900">{camera.name}</h3>
             <p className="mt-0.5 font-mono text-[10px] font-bold uppercase tracking-[0.2em] text-ink-400">
-              Hand-restored · Grade A
+              Grade A
             </p>
           </div>
           <span className="mt-1 flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-ink-900/10 text-ink-400 transition-all duration-300 group-hover:rotate-45 group-hover:border-flash-500 group-hover:text-flash-500">

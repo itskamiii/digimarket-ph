@@ -60,7 +60,7 @@ export default function Footer() {
               </span>
             </a>
             <p className="mt-5 max-w-sm text-sm leading-relaxed text-cream-100/50">
-              Hand-restored vintage digital cameras for the Y2K generation. Hunted, restored, and
+              Vintage digital cameras for the Y2K generation. Hunted, restored, and
               tested in Manila — shipped to your era, nationwide.
             </p>
             <div className="mt-6 flex gap-2.5">

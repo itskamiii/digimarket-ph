@@ -32,7 +32,7 @@ export const PRESS = [
 export const STATS = [
   { value: 200, suffix: "+", label: "cameras shipped nationwide" },
   { value: 40, suffix: "+", label: "cities across the PH delivered" },
-  { value: 100, suffix: "%", label: "hand-restored & tested in Manila" },
+  { value: 100, suffix: "%", label: "tested in Manila" },
 ];
 
 // Camera/CatalogItem inventory (units, camcorders, digicams) now lives in Supabase —
@@ -67,7 +67,7 @@ export const FEATURES = [
   },
   {
     icon: "wrench",
-    title: "Hand-restored in Manila",
+    title: "Tested & prepped in Manila",
     body: "Every unit gets fresh batteries, a sensor dust-out, lens cleaning, and a full flash test before it ships. If we wouldn't gift it, we don't sell it.",
   },
   {
@@ -162,7 +162,7 @@ export const PLANS: Plan[] = [
     price: 2990,
     monthly: 997,
     features: [
-      "1 hand-restored digicam (your pick from the drop)",
+      "1 digicam (your pick from the drop)",
       "Wrist strap + 4GB SD card",
       "USB card reader for instant uploads",
       "30-day warranty",
