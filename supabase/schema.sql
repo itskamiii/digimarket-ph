@@ -32,6 +32,7 @@ create table if not exists units (
   old_price_php integer,
   badge text,
   best_for text,
+  description text, -- full info-sheet text (vibe, key features, condition, inclusions, shipping)
   is_featured boolean not null default false,
   image_url text,
   tint text,
@@ -43,9 +44,10 @@ create table if not exists units (
 );
 create index if not exists units_status_idx on units(status);
 create index if not exists units_reserved_order_idx on units(reserved_order_id);
--- Migration for databases created before best_for existed (fresh installs already get
--- it from the CREATE TABLE above).
+-- Migration for databases created before best_for/description existed (fresh installs
+-- already get these from the CREATE TABLE above).
 alter table units add column if not exists best_for text;
+alter table units add column if not exists description text;
 
 -- Migration: the 3x-installment feature was fabricated template content, not a real
 -- offer — dropped from orders/kits along with the checkout UI that set/read it.

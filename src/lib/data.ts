@@ -64,6 +64,8 @@ export type CatalogItem = {
   name: string;
   price: number;
   availability: Availability;
+  description?: string;
+  image?: string;
 };
 
 export const FEATURES = [

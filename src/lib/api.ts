@@ -4,7 +4,7 @@ import type { Camera, CatalogItem } from "./data";
 export type ProductsResponse = {
   cameras: Camera[];
   camcorders: CatalogItem[];
-  digicamsByBrand: { brand: string; items: CatalogItem[] }[];
+  digicams: CatalogItem[];
   kits: { id: string; price: number }[];
 };
 

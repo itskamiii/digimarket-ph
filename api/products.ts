@@ -16,11 +16,19 @@ function toCamera(unit: UnitRow) {
 }
 
 function toCatalogItem(unit: UnitRow) {
-  return { id: unit.id, name: unit.name, price: unit.price_php, availability: unit.status };
+  return {
+    id: unit.id,
+    name: unit.name,
+    price: unit.price_php,
+    availability: unit.status,
+    description: unit.description ?? undefined,
+    image: unit.image_url ?? undefined,
+  };
 }
 
 // "Others" is an intentional catch-all bucket and always sorts last; any other brand
-// not in PREFERRED_BRAND_ORDER falls in between, alphabetically.
+// not in PREFERRED_BRAND_ORDER falls in between, alphabetically. No tab to switch
+// brands anymore, but this keeps the flat Digicams list tidily clustered.
 const PREFERRED_BRAND_ORDER = ["Sony", "Nikon"];
 function brandRank(brand: string): number {
   if (brand === "Others") return Number.MAX_SAFE_INTEGER;
@@ -35,20 +43,18 @@ export async function GET() {
     const cameras = units.filter((u) => u.is_featured).map(toCamera);
     const camcorders = units.filter((u) => u.category === "camcorder").map(toCatalogItem);
 
-    const digicams = units.filter((u) => u.category === "digicam");
-    const brands = Array.from(new Set(digicams.map((u) => u.brand ?? "Others"))).sort((a, b) => {
-      const diff = brandRank(a) - brandRank(b);
-      return diff !== 0 ? diff : a.localeCompare(b);
-    });
-    const digicamsByBrand = brands.map((brand) => ({
-      brand,
-      items: digicams.filter((u) => (u.brand ?? "Others") === brand).map(toCatalogItem),
-    }));
+    const digicams = units
+      .filter((u) => u.category === "digicam")
+      .sort((a, b) => {
+        const diff = brandRank(a.brand ?? "Others") - brandRank(b.brand ?? "Others");
+        return diff !== 0 ? diff : a.name.localeCompare(b.name);
+      })
+      .map(toCatalogItem);
 
     const kitsPayload = kits.map((kit) => ({ id: kit.id, price: kit.price_php }));
 
     return Response.json(
-      { cameras, camcorders, digicamsByBrand, kits: kitsPayload },
+      { cameras, camcorders, digicams, kits: kitsPayload },
       { headers: { "Cache-Control": "s-maxage=30, stale-while-revalidate=60" } }
     );
   } catch (err) {
