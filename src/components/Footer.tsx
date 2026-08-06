@@ -29,8 +29,10 @@ const FacebookIcon = ({ className }: IconProps) => (
   </svg>
 );
 
+// TODO(owner): only Instagram is a confirmed real handle so far. Swap the remaining
+// "#top" placeholders for real profile URLs once you share them, or drop the icon.
 const SOCIALS = [
-  { label: "Instagram", icon: InstagramIcon, href: "#top" },
+  { label: "Instagram", icon: InstagramIcon, href: "https://instagram.com/digimarket_ph" },
   { label: "TikTok", icon: TikTokIcon, href: "#top" },
   { label: "Twitter / X", icon: XIcon, href: "#top" },
   { label: "Facebook", icon: FacebookIcon, href: "#top" },

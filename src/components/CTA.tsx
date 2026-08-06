@@ -1,16 +1,41 @@
 import { AnimatePresence, motion } from "framer-motion";
-import { ArrowRight, Bell, Check, Sparkles } from "lucide-react";
+import { AlertCircle, ArrowRight, Bell, Check, Sparkles } from "lucide-react";
 import { useState, type FormEvent } from "react";
 import { Reveal } from "./Reveal";
+
+const FORMSPREE_ENDPOINT = import.meta.env.VITE_FORMSPREE_ENDPOINT as string | undefined;
 
 export default function CTA() {
   const [email, setEmail] = useState("");
   const [done, setDone] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  const onSubmit = (e: FormEvent) => {
+  const onSubmit = async (e: FormEvent) => {
     e.preventDefault();
-    if (!email.trim()) return;
-    setDone(true);
+    if (!email.trim() || submitting) return;
+
+    if (!FORMSPREE_ENDPOINT) {
+      console.error("VITE_FORMSPREE_ENDPOINT is not set — see .env.example");
+      setError("Signups aren't wired up yet — check back soon!");
+      return;
+    }
+
+    setSubmitting(true);
+    setError(null);
+    try {
+      const res = await fetch(FORMSPREE_ENDPOINT, {
+        method: "POST",
+        headers: { Accept: "application/json", "Content-Type": "application/json" },
+        body: JSON.stringify({ email }),
+      });
+      if (!res.ok) throw new Error("request_failed");
+      setDone(true);
+    } catch {
+      setError("Couldn't join the list — please try again.");
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   return (
@@ -81,15 +106,22 @@ export default function CTA() {
                     />
                     <button
                       type="submit"
-                      className="btn-shine group inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-full bg-flash-500 px-7 py-4 text-sm font-semibold text-cream-50 shadow-xl shadow-flash-500/35 transition-all duration-300 hover:-translate-y-0.5 hover:bg-flash-600"
+                      disabled={submitting}
+                      className="btn-shine group inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-full bg-flash-500 px-7 py-4 text-sm font-semibold text-cream-50 shadow-xl shadow-flash-500/35 transition-all duration-300 hover:-translate-y-0.5 hover:bg-flash-600 disabled:pointer-events-none disabled:opacity-60"
                     >
                       <Bell className="h-4 w-4" />
-                      Notify me
+                      {submitting ? "Joining…" : "Notify me"}
                       <ArrowRight className="h-4 w-4 transition-transform duration-300 group-hover:translate-x-1" />
                     </button>
                   </motion.form>
                 )}
               </AnimatePresence>
+              {error && (
+                <p className="mt-3 flex items-center justify-center gap-1.5 text-sm font-medium text-flash-400">
+                  <AlertCircle className="h-4 w-4" />
+                  {error}
+                </p>
+              )}
               <p className="mt-4 font-mono text-[10px] font-bold uppercase tracking-[0.2em] text-cream-100/35">
                 No spam. Just drops. Unsubscribe anytime.
               </p>

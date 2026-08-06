@@ -2,13 +2,24 @@ import { AnimatePresence, motion } from "framer-motion";
 import { BadgeCheck, Check, CreditCard, ShoppingBag } from "lucide-react";
 import { useState } from "react";
 import kitFlatlay from "../assets/kit-flatlay.jpg";
+import { useCart } from "../context/CartContext";
+import { useProducts } from "../hooks/useProducts";
 import { PLANS } from "../lib/data";
+import { formatPeso as peso } from "../lib/format";
 import { EASE, Eyebrow, Reveal } from "./Reveal";
-
-const peso = (n: number) => "₱" + n.toLocaleString("en-PH");
 
 export default function Pricing() {
   const [installment, setInstallment] = useState(false);
+  const { addItem, openCart } = useCart();
+  const products = useProducts();
+
+  // Marketing copy (tagline/features) stays static; price/monthly come from Supabase
+  // once loaded, and a plan disappears here if the owner deactivates its kit there.
+  const liveKits = products.status === "ready" ? products.data.kits : null;
+  const plans = PLANS.filter((p) => !liveKits || liveKits.some((k) => k.id === p.id)).map((p) => {
+    const live = liveKits?.find((k) => k.id === p.id);
+    return live ? { ...p, price: live.price, monthly: live.monthly } : p;
+  });
 
   return (
     <section id="kits" className="relative overflow-hidden py-20 lg:py-28">
@@ -101,7 +112,7 @@ export default function Pricing() {
 
         {/* Plans */}
         <div className="mt-12 grid gap-6 lg:grid-cols-3 lg:items-stretch">
-          {PLANS.map((plan, i) => (
+          {plans.map((plan, i) => (
             <Reveal key={plan.id} delay={i * 0.1} className="h-full">
               <article
                 className={`relative flex h-full flex-col rounded-[2rem] p-8 transition-all duration-500 hover:-translate-y-2 ${
@@ -186,8 +197,12 @@ export default function Pricing() {
                   </ul>
                 </div>
 
-                <a
-                  href="#cta"
+                <button
+                  type="button"
+                  onClick={() => {
+                    addItem({ type: "kit", id: plan.id, name: plan.name, price: plan.price });
+                    openCart();
+                  }}
                   className={`btn-shine group relative mt-8 inline-flex items-center justify-center gap-2 rounded-full px-6 py-4 text-sm font-semibold transition-all duration-300 hover:-translate-y-0.5 ${
                     plan.popular
                       ? "bg-flash-500 text-cream-50 shadow-xl shadow-flash-500/35 hover:bg-flash-600"
@@ -196,7 +211,7 @@ export default function Pricing() {
                 >
                   <ShoppingBag className="h-4 w-4 transition-transform duration-300 group-hover:-rotate-12" />
                   {plan.cta}
-                </a>
+                </button>
               </article>
             </Reveal>
           ))}

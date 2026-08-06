@@ -1,8 +1,10 @@
+import { Check, Plus } from "lucide-react";
 import { useState } from "react";
-import { CAMCORDERS, DIGICAMS_BY_BRAND, type Availability, type CatalogItem } from "../lib/data";
+import { useCart } from "../context/CartContext";
+import { useProducts } from "../hooks/useProducts";
+import type { Availability, CatalogItem } from "../lib/data";
+import { formatPeso } from "../lib/format";
 import { Eyebrow, Reveal, Stagger, StaggerItem } from "./Reveal";
-
-const peso = (n: number) => "₱" + n.toLocaleString("en-PH");
 
 function StatusPill({ availability }: { availability: Availability }) {
   if (availability === "sold") {
@@ -23,7 +25,10 @@ function StatusPill({ availability }: { availability: Availability }) {
 }
 
 function CatalogRow({ item }: { item: CatalogItem }) {
+  const { addItem, isInCart } = useCart();
   const isAvailable = item.availability === "available";
+  const inBag = isInCart("unit", item.id);
+
   return (
     <li
       className={`flex items-center justify-between gap-4 border-b border-ink-900/8 py-3.5 last:border-b-0 ${
@@ -34,26 +39,44 @@ function CatalogRow({ item }: { item: CatalogItem }) {
       <span className="flex shrink-0 items-center gap-3">
         <StatusPill availability={item.availability} />
         {isAvailable && (
-          <span className="font-display text-sm font-bold text-ink-900 sm:text-base">
-            {peso(item.price)}
-          </span>
+          <>
+            <span className="font-display text-sm font-bold text-ink-900 sm:text-base">{formatPeso(item.price)}</span>
+            <button
+              type="button"
+              onClick={() =>
+                !inBag && addItem({ type: "unit", id: item.id, name: item.name, price: item.price })
+              }
+              disabled={inBag}
+              aria-label={inBag ? `${item.name} is in your bag` : `Add ${item.name} to bag`}
+              className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full transition-colors duration-300 ${
+                inBag
+                  ? "bg-lcd-500/15 text-lcd-500"
+                  : "bg-ink-900/8 text-ink-700 hover:bg-flash-500 hover:text-cream-50"
+              }`}
+            >
+              {inBag ? (
+                <Check className="h-3.5 w-3.5" strokeWidth={3} />
+              ) : (
+                <Plus className="h-3.5 w-3.5" strokeWidth={3} />
+              )}
+            </button>
+          </>
         )}
       </span>
     </li>
   );
 }
 
-type Tab = "camcorders" | (typeof DIGICAMS_BY_BRAND)[number]["brand"];
-
 export default function Catalog() {
-  const brandTabs = DIGICAMS_BY_BRAND.map((g) => g.brand);
-  const tabs: Tab[] = ["camcorders", ...brandTabs];
-  const [active, setActive] = useState<Tab>(tabs[0]);
+  const products = useProducts();
+  const [active, setActive] = useState<string>("camcorders");
+
+  const digicamsByBrand = products.status === "ready" ? products.data.digicamsByBrand : [];
+  const camcorders = products.status === "ready" ? products.data.camcorders : [];
+  const tabs = ["camcorders", ...digicamsByBrand.map((g) => g.brand)];
 
   const activeItems: CatalogItem[] =
-    active === "camcorders"
-      ? CAMCORDERS
-      : DIGICAMS_BY_BRAND.find((g) => g.brand === active)?.items ?? [];
+    active === "camcorders" ? camcorders : digicamsByBrand.find((g) => g.brand === active)?.items ?? [];
 
   return (
     <section id="catalog" className="relative overflow-hidden py-20 lg:py-28">
@@ -92,15 +115,23 @@ export default function Catalog() {
           ))}
         </Reveal>
 
-        <Stagger className="mt-8" amount={0.05}>
-          <StaggerItem>
-            <ul className="rounded-[1.5rem] border border-ink-900/8 bg-cream-50 px-5 py-2 sm:px-8">
-              {activeItems.map((item) => (
-                <CatalogRow key={item.id} item={item} />
-              ))}
-            </ul>
-          </StaggerItem>
-        </Stagger>
+        {products.status === "loading" && (
+          <p className="mt-10 text-center text-sm text-ink-400">Loading the catalog…</p>
+        )}
+        {products.status === "error" && (
+          <p className="mt-10 text-center text-sm text-flash-600">{products.message}</p>
+        )}
+        {products.status === "ready" && (
+          <Stagger className="mt-8" amount={0.05}>
+            <StaggerItem>
+              <ul className="rounded-[1.5rem] border border-ink-900/8 bg-cream-50 px-5 py-2 sm:px-8">
+                {activeItems.map((item) => (
+                  <CatalogRow key={item.id} item={item} />
+                ))}
+              </ul>
+            </StaggerItem>
+          </Stagger>
+        )}
       </div>
     </section>
   );

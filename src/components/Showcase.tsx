@@ -1,20 +1,26 @@
 import { motion } from "framer-motion";
 import { ArrowUpRight, Check, Flame, Plus } from "lucide-react";
 import { useState } from "react";
-import { CAMERAS, type Camera } from "../lib/data";
+import { useCart } from "../context/CartContext";
+import { useProducts } from "../hooks/useProducts";
+import type { Camera } from "../lib/data";
+import { formatPeso } from "../lib/format";
 import { Eyebrow, Reveal, Stagger, StaggerItem } from "./Reveal";
 
-const peso = (n: number) => "₱" + n.toLocaleString("en-PH");
-
 function CameraCard({ camera }: { camera: Camera }) {
-  const [added, setAdded] = useState(false);
+  const { addItem, isInCart } = useCart();
+  const [justAdded, setJustAdded] = useState(false);
   const isUnavailable = camera.availability !== "available";
+  const inBag = isInCart("unit", camera.id);
 
   const addToBag = () => {
-    if (added || isUnavailable) return;
-    setAdded(true);
-    window.setTimeout(() => setAdded(false), 2200);
+    if (isUnavailable || inBag) return;
+    addItem({ type: "unit", id: camera.id, name: camera.name, price: camera.price, image: camera.image });
+    setJustAdded(true);
+    window.setTimeout(() => setJustAdded(false), 2200);
   };
+
+  const showAdded = justAdded || inBag;
 
   return (
     <article className="group relative flex h-full flex-col overflow-hidden rounded-[1.75rem] border border-ink-900/8 bg-cream-50 shadow-[0_2px_20px_-8px_rgba(27,23,18,0.12)] transition-all duration-500 hover:-translate-y-2 hover:shadow-[0_30px_60px_-24px_rgba(27,23,18,0.3)]">
@@ -32,10 +38,12 @@ function CameraCard({ camera }: { camera: Camera }) {
 
         {/* Badges */}
         <div className="absolute left-4 top-4 flex flex-col items-start gap-2">
-          <span className="flex items-center gap-1.5 rounded-full bg-ink-900/85 px-3 py-1.5 font-mono text-[10px] font-bold uppercase tracking-[0.16em] text-cream-50 backdrop-blur">
-            <Flame className="h-3 w-3 text-flash-400" />
-            {camera.badge}
-          </span>
+          {camera.badge && (
+            <span className="flex items-center gap-1.5 rounded-full bg-ink-900/85 px-3 py-1.5 font-mono text-[10px] font-bold uppercase tracking-[0.16em] text-cream-50 backdrop-blur">
+              <Flame className="h-3 w-3 text-flash-400" />
+              {camera.badge}
+            </span>
+          )}
           {camera.availability === "sold" && (
             <span className="rounded-full bg-cream-50/90 px-3 py-1.5 font-mono text-[10px] font-bold uppercase tracking-[0.16em] text-ink-900 backdrop-blur">
               Sold
@@ -53,9 +61,7 @@ function CameraCard({ camera }: { camera: Camera }) {
       <div className="flex flex-1 flex-col p-5 sm:p-6">
         <div className="flex items-start justify-between gap-3">
           <div>
-            <h3 className="font-display text-lg font-bold tracking-tight text-ink-900">
-              {camera.name}
-            </h3>
+            <h3 className="font-display text-lg font-bold tracking-tight text-ink-900">{camera.name}</h3>
             <p className="mt-0.5 font-mono text-[10px] font-bold uppercase tracking-[0.2em] text-ink-400">
               Hand-restored · Grade A
             </p>
@@ -68,13 +74,9 @@ function CameraCard({ camera }: { camera: Camera }) {
         <div className="mt-4 flex items-end justify-between gap-3 pt-1">
           <div>
             {camera.oldPrice && (
-              <p className="font-mono text-[11px] text-ink-400 line-through">
-                {peso(camera.oldPrice)}
-              </p>
+              <p className="font-mono text-[11px] text-ink-400 line-through">{formatPeso(camera.oldPrice)}</p>
             )}
-            <p className="font-display text-2xl font-bold tracking-tight text-ink-900">
-              {peso(camera.price)}
-            </p>
+            <p className="font-display text-2xl font-bold tracking-tight text-ink-900">{formatPeso(camera.price)}</p>
           </div>
 
           <motion.button
@@ -86,16 +88,20 @@ function CameraCard({ camera }: { camera: Camera }) {
             className={`inline-flex items-center gap-2 rounded-full px-5 py-3 text-sm font-semibold transition-all duration-300 ${
               isUnavailable
                 ? "cursor-not-allowed bg-ink-900/10 text-ink-400"
-                : added
+                : showAdded
                   ? "bg-lcd-500 text-white shadow-lg shadow-lcd-500/30"
                   : "bg-ink-900 text-cream-50 shadow-lg shadow-ink-900/25 hover:bg-flash-500 hover:shadow-flash-500/35"
             }`}
           >
             {isUnavailable ? (
-              camera.availability === "reserved" ? "Reserved" : "Join waitlist"
-            ) : added ? (
+              camera.availability === "reserved" ? (
+                "Reserved"
+              ) : (
+                "Join waitlist"
+              )
+            ) : showAdded ? (
               <>
-                <Check className="h-4 w-4" strokeWidth={3} /> Added!
+                <Check className="h-4 w-4" strokeWidth={3} /> In bag
               </>
             ) : (
               <>
@@ -110,6 +116,8 @@ function CameraCard({ camera }: { camera: Camera }) {
 }
 
 export default function Showcase() {
+  const products = useProducts();
+
   return (
     <section id="drop" className="relative overflow-hidden py-20 lg:py-28">
       <div
@@ -138,13 +146,21 @@ export default function Showcase() {
           </Reveal>
         </div>
 
-        <Stagger className="mt-12 grid gap-6 sm:grid-cols-2 lg:mt-16 lg:grid-cols-3" amount={0.08}>
-          {CAMERAS.map((camera) => (
-            <StaggerItem key={camera.id} className="h-full">
-              <CameraCard camera={camera} />
-            </StaggerItem>
-          ))}
-        </Stagger>
+        {products.status === "loading" && (
+          <p className="mt-12 text-center text-sm text-ink-400">Loading the current drop…</p>
+        )}
+        {products.status === "error" && (
+          <p className="mt-12 text-center text-sm text-flash-600">{products.message}</p>
+        )}
+        {products.status === "ready" && (
+          <Stagger className="mt-12 grid gap-6 sm:grid-cols-2 lg:mt-16 lg:grid-cols-3" amount={0.08}>
+            {products.data.cameras.map((camera) => (
+              <StaggerItem key={camera.id} className="h-full">
+                <CameraCard camera={camera} />
+              </StaggerItem>
+            ))}
+          </Stagger>
+        )}
 
         <Reveal delay={0.1} className="mt-12 text-center">
           <p className="font-mono text-[11px] font-bold uppercase tracking-[0.24em] text-ink-400">

@@ -1,12 +1,14 @@
 import { AnimatePresence, motion } from "framer-motion";
 import { Camera, Menu, ShoppingBag, X } from "lucide-react";
 import { useEffect, useState } from "react";
+import { useCart } from "../context/CartContext";
 import { NAV_LINKS } from "../lib/data";
 import { EASE } from "./Reveal";
 
 export default function Navbar() {
   const [scrolled, setScrolled] = useState(false);
   const [open, setOpen] = useState(false);
+  const { itemCount, openCart } = useCart();
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 24);
@@ -85,6 +87,19 @@ export default function Navbar() {
               <ShoppingBag className="h-4 w-4 transition-transform duration-300 group-hover:-rotate-12" />
               Shop the drop
             </a>
+            <button
+              type="button"
+              onClick={openCart}
+              aria-label={itemCount > 0 ? `Open bag, ${itemCount} item${itemCount === 1 ? "" : "s"}` : "Open bag"}
+              className="relative inline-flex h-10 w-10 items-center justify-center rounded-full border border-ink-900/10 bg-cream-50/70 text-ink-900 backdrop-blur transition-colors hover:bg-cream-50"
+            >
+              <ShoppingBag className="h-4.5 w-4.5" />
+              {itemCount > 0 && (
+                <span className="absolute -right-1 -top-1 flex h-4.5 min-w-4.5 items-center justify-center rounded-full bg-flash-500 px-1 font-mono text-[9px] font-bold text-cream-50 ring-2 ring-cream-50">
+                  {itemCount}
+                </span>
+              )}
+            </button>
             <button
               type="button"
               onClick={() => setOpen(!open)}
