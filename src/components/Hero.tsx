@@ -145,18 +145,6 @@ export default function Hero() {
               width={880}
               height={1100}
             />
-            {/* Collection info overlay strip */}
-            <div className="absolute inset-x-4 bottom-4 rounded-2xl glass px-4 py-3 shadow-lg">
-              <div className="flex items-center justify-between font-mono text-[10px] font-bold uppercase tracking-[0.18em] text-ink-700 sm:text-[11px]">
-                <span className="flex items-center gap-1.5">
-                  <span className="h-1.5 w-1.5 rounded-full bg-flash-500 animate-pulse-dot" />
-                  27TH_COLLECTION.JPG
-                </span>
-                <span className="flex items-center gap-1 text-lcd-500">
-                  <Zap className="h-3 w-3 fill-current" /> NEW DROP
-                </span>
-              </div>
-            </div>
           </div>
 
           {/* Floating spec chips */}
