@@ -7,26 +7,33 @@ export const NAV_LINKS = [
   { label: "FAQ", href: "#faq" },
 ];
 
-export const MARQUEE_WORDS = [
-  "CCD SENSORS",
-  "FLASH ON",
-  "REAL GRAIN",
-  "EST. 2004",
-  "POINT & SHOOT",
-  "NO FILTERS",
-  "Y2K CORE",
-  "RESTORED IN MANILA",
-  "POCKET-SIZED",
-  "LOW-RES LOVE",
-];
-
-export const PRESS = [
-  "Y2K MAGAZINE",
-  "GADGET PH",
-  "BACKSPACE PH",
-  "MANILA NOSTALGIA",
-  "TIKTOK MADE ME BUY IT",
-  "SPOT.PH",
+export const HASHTAGS = [
+  "#Digicam",
+  "#DigicamPH",
+  "#VintageDigicam",
+  "#DigicamPhilippines",
+  "#VintageDigicamPH",
+  "#CCDCamera",
+  "#PointAndShoot",
+  "#DigicamForSalePH",
+  "#DigiMarketPH",
+  "#CamerasPH",
+  "#Y2KCamera",
+  "#VintageCamera",
+  "#CCDColors",
+  "#Y2KAesthetic",
+  "#FilmicLook",
+  "#NostalgicVibe",
+  "#FlashPhotography",
+  "#2000sAesthetic",
+  "#RetroAesthetic",
+  "#Camcorder",
+  "#CamcorderPH",
+  "#RetroCamcorder",
+  "#Y2KVideo",
+  "#VintageCamcorder",
+  "#HomeVideos",
+  "#2000sVibe",
 ];
 
 export const STATS = [
