@@ -1,6 +1,38 @@
 import { Star } from "lucide-react";
-import { TESTIMONIALS } from "../lib/data";
+import { CUSTOMER_TAGS, TESTIMONIALS } from "../lib/data";
 import { Eyebrow, Reveal, Stagger, StaggerItem } from "./Reveal";
+
+function CustomerTagsMarquee() {
+  return (
+    <div className="mt-10">
+      <Reveal delay={0.14}>
+        <p className="text-center font-mono text-[10px] font-bold uppercase tracking-[0.3em] text-ink-400">
+          Tagged by real buyers on Instagram
+        </p>
+      </Reveal>
+      <div className="group relative mt-5 overflow-hidden [mask-image:linear-gradient(to_right,transparent,black_8%,black_92%,transparent)]">
+        <div className="flex w-max animate-marquee gap-4 pr-4 group-hover:[animation-play-state:paused]">
+          {[...CUSTOMER_TAGS, ...CUSTOMER_TAGS].map((tag, i) => (
+            <div
+              key={i}
+              className="relative h-44 w-32 shrink-0 overflow-hidden rounded-2xl bg-ink-900/5 sm:h-52 sm:w-40"
+            >
+              <img
+                src={tag.image}
+                alt={`Camera tagged by ${tag.handle} on Instagram`}
+                loading="lazy"
+                className="h-full w-full object-cover"
+              />
+              <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-ink-900/85 via-ink-900/10 to-transparent px-2.5 pb-2 pt-8">
+                <p className="truncate font-mono text-[10px] font-bold text-cream-50">{tag.handle}</p>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
 
 function Stars() {
   return (
@@ -31,12 +63,9 @@ export default function Testimonials() {
               <span className="text-flash-500">Zero filters used.</span>
             </h2>
           </Reveal>
-          <Reveal delay={0.16}>
-            <p className="mt-5 text-base leading-relaxed text-ink-500 sm:text-lg">
-              From Manila to Davao, the era is spreading.
-            </p>
-          </Reveal>
         </div>
+
+        <CustomerTagsMarquee />
 
         <Stagger className="mt-14 grid gap-5 sm:grid-cols-2 lg:grid-cols-3" amount={0.1}>
           {TESTIMONIALS.map((t, i) => {

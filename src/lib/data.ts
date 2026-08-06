@@ -37,6 +37,36 @@ export const HASHTAGS = [
   "#2000sVibe",
 ];
 
+// Real customers who tagged @digimarket_ph with photos of the camera they bought —
+// pulled from the IG "Tags" story highlight. A few handles repeat (multiple tags from
+// the same buyer); that's expected, not a data bug.
+export const CUSTOMER_TAGS = [
+  { handle: "@aleiahtorres", image: "https://bfwaehbdyxtdfjdmgxor.supabase.co/storage/v1/object/public/unit-photos/customer-tags/aleiahtorres.jpg" },
+  { handle: "@chantalflrn", image: "https://bfwaehbdyxtdfjdmgxor.supabase.co/storage/v1/object/public/unit-photos/customer-tags/chantalflrn.jpg" },
+  { handle: "@clnbtn_", image: "https://bfwaehbdyxtdfjdmgxor.supabase.co/storage/v1/object/public/unit-photos/customer-tags/clnbtn_.jpg" },
+  { handle: "@denmvrk_", image: "https://bfwaehbdyxtdfjdmgxor.supabase.co/storage/v1/object/public/unit-photos/customer-tags/denmvrk_.jpg" },
+  { handle: "@endylienne", image: "https://bfwaehbdyxtdfjdmgxor.supabase.co/storage/v1/object/public/unit-photos/customer-tags/endylienne.jpg" },
+  { handle: "@frzncs.a", image: "https://bfwaehbdyxtdfjdmgxor.supabase.co/storage/v1/object/public/unit-photos/customer-tags/frzncs.a.jpg" },
+  { handle: "@happi_b2j", image: "https://bfwaehbdyxtdfjdmgxor.supabase.co/storage/v1/object/public/unit-photos/customer-tags/happi_b2j.jpg" },
+  { handle: "@jmsaqn", image: "https://bfwaehbdyxtdfjdmgxor.supabase.co/storage/v1/object/public/unit-photos/customer-tags/jmsaqn.jpg" },
+  { handle: "@john_paul_dizon", image: "https://bfwaehbdyxtdfjdmgxor.supabase.co/storage/v1/object/public/unit-photos/customer-tags/john_paul_dizon.jpg" },
+  { handle: "@john_paul_dizon", image: "https://bfwaehbdyxtdfjdmgxor.supabase.co/storage/v1/object/public/unit-photos/customer-tags/john_paul_dizon2.jpg" },
+  { handle: "@john_paul_dizon", image: "https://bfwaehbdyxtdfjdmgxor.supabase.co/storage/v1/object/public/unit-photos/customer-tags/john_paul_dizon3.jpg" },
+  { handle: "@lalachan", image: "https://bfwaehbdyxtdfjdmgxor.supabase.co/storage/v1/object/public/unit-photos/customer-tags/lalachan.png" },
+  { handle: "@lalachan", image: "https://bfwaehbdyxtdfjdmgxor.supabase.co/storage/v1/object/public/unit-photos/customer-tags/lalachan2.png" },
+  { handle: "@lily_dg4f", image: "https://bfwaehbdyxtdfjdmgxor.supabase.co/storage/v1/object/public/unit-photos/customer-tags/lily_dg4f.jpg" },
+  { handle: "@maia.llorente", image: "https://bfwaehbdyxtdfjdmgxor.supabase.co/storage/v1/object/public/unit-photos/customer-tags/maia.llorente.jpg" },
+  { handle: "@mrdxyz", image: "https://bfwaehbdyxtdfjdmgxor.supabase.co/storage/v1/object/public/unit-photos/customer-tags/mrdxyz.jpg" },
+  { handle: "@raineticzon", image: "https://bfwaehbdyxtdfjdmgxor.supabase.co/storage/v1/object/public/unit-photos/customer-tags/raineticzon.jpg" },
+  { handle: "@reallyzelle", image: "https://bfwaehbdyxtdfjdmgxor.supabase.co/storage/v1/object/public/unit-photos/customer-tags/reallyzelle.jpg" },
+  { handle: "@s.assissa", image: "https://bfwaehbdyxtdfjdmgxor.supabase.co/storage/v1/object/public/unit-photos/customer-tags/s.assissa.jpg" },
+  { handle: "@urynns_", image: "https://bfwaehbdyxtdfjdmgxor.supabase.co/storage/v1/object/public/unit-photos/customer-tags/urynns_.jpg" },
+  { handle: "@urynns_", image: "https://bfwaehbdyxtdfjdmgxor.supabase.co/storage/v1/object/public/unit-photos/customer-tags/urynns_1.jpg" },
+  { handle: "@urynns_", image: "https://bfwaehbdyxtdfjdmgxor.supabase.co/storage/v1/object/public/unit-photos/customer-tags/urynns_2.jpg" },
+  { handle: "@vielisaacc", image: "https://bfwaehbdyxtdfjdmgxor.supabase.co/storage/v1/object/public/unit-photos/customer-tags/vielisaacc.jpg" },
+  { handle: "@zysarrizada", image: "https://bfwaehbdyxtdfjdmgxor.supabase.co/storage/v1/object/public/unit-photos/customer-tags/zysarrizada.jpg" },
+];
+
 export const STATS = [
   { value: 200, suffix: "+", label: "cameras shipped nationwide" },
   { value: 40, suffix: "+", label: "cities across the PH delivered" },
