@@ -1,5 +1,5 @@
-import { getProducts } from "../server/db";
-import type { UnitRow } from "../server/types";
+import { getProducts } from "../server/db.js";
+import type { UnitRow } from "../server/types.js";
 
 function toCamera(unit: UnitRow) {
   return {

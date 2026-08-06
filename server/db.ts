@@ -1,5 +1,5 @@
-import { getSupabase } from "./supabase";
-import type { KitRow, OrderRow, OrderStatusValue, ShippingAddress, UnitRow } from "./types";
+import { getSupabase } from "./supabase.js";
+import type { KitRow, OrderRow, OrderStatusValue, ShippingAddress, UnitRow } from "./types.js";
 
 export async function getProducts(): Promise<{ units: UnitRow[]; kits: KitRow[] }> {
   const supabase = getSupabase();

@@ -1,4 +1,4 @@
-import { isMetroManila } from "../server/constants";
+import { isMetroManila } from "../server/constants.js";
 import {
   attachPaymongoSession,
   deleteOrder,
@@ -9,9 +9,9 @@ import {
   releaseUnitsForOrder,
   reserveUnits,
   type NewOrderItemInput,
-} from "../server/db";
-import { createCheckoutSession } from "../server/paymongo";
-import type { CheckoutItemInput, CheckoutRequestBody, ShippingAddress } from "../server/types";
+} from "../server/db.js";
+import { createCheckoutSession } from "../server/paymongo.js";
+import type { CheckoutItemInput, CheckoutRequestBody, ShippingAddress } from "../server/types.js";
 
 function isValidEmail(email: string): boolean {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);

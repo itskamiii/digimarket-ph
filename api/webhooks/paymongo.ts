@@ -1,5 +1,5 @@
-import { getOrderByCheckoutSessionId, getOrderById, markOrderPaid, markUnitsSold } from "../../server/db";
-import { verifyPaymongoSignature } from "../../server/paymongo";
+import { getOrderByCheckoutSessionId, getOrderById, markOrderPaid, markUnitsSold } from "../../server/db.js";
+import { verifyPaymongoSignature } from "../../server/paymongo.js";
 
 // PayMongo's webhook envelope: { data: { attributes: { type: "<event>", data: <resource> } } }.
 // The exact nesting of `payment_method_used` below is unconfirmed against a live

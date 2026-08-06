@@ -1,4 +1,4 @@
-import { markOrderCancelled, releaseUnitsForOrder } from "../../server/db";
+import { markOrderCancelled, releaseUnitsForOrder } from "../../server/db.js";
 
 // PayMongo's cancel_url — hit by the customer's browser (GET) when they explicitly back
 // out of the hosted checkout page. Releases their reservation immediately (instead of

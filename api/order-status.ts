@@ -1,4 +1,4 @@
-import { getOrderById } from "../server/db";
+import { getOrderById } from "../server/db.js";
 
 export async function GET(request: Request) {
   const orderId = new URL(request.url).searchParams.get("orderId");
