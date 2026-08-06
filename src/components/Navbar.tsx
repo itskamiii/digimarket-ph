@@ -1,6 +1,7 @@
 import { AnimatePresence, motion } from "framer-motion";
-import { Camera, Menu, ShoppingBag, X } from "lucide-react";
+import { Menu, ShoppingBag, X } from "lucide-react";
 import { useEffect, useState } from "react";
+import logo from "../assets/logo.png";
 import { useCart } from "../context/CartContext";
 import { NAV_LINKS } from "../lib/data";
 import { EASE } from "./Reveal";
@@ -55,10 +56,13 @@ export default function Navbar() {
             className="group flex items-center gap-2.5"
             aria-label="Digimarket_PH home"
           >
-            <span className="relative flex h-9 w-9 items-center justify-center rounded-xl bg-ink-900 text-cream-100 shadow-lg shadow-ink-900/20 transition-transform duration-300 group-hover:-rotate-6 group-hover:scale-105">
-              <Camera className="h-4.5 w-4.5" strokeWidth={2.2} />
-              <span className="absolute -right-1 -top-1 h-2.5 w-2.5 rounded-full bg-flash-500 ring-2 ring-cream-50" />
-            </span>
+            <img
+              src={logo}
+              alt=""
+              className="h-9 w-9 rounded-full shadow-lg shadow-ink-900/20 transition-transform duration-300 group-hover:-rotate-6 group-hover:scale-105"
+              width={36}
+              height={36}
+            />
             <span className="font-display text-lg font-bold tracking-tight text-ink-900">
               digimarket<span className="text-flash-500">_ph</span>
             </span>

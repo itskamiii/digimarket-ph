@@ -1,24 +1,21 @@
-import { AnimatePresence, motion } from "framer-motion";
-import { BadgeCheck, Check, CreditCard, ShoppingBag } from "lucide-react";
-import { useState } from "react";
+import { Check, CreditCard, ShoppingBag } from "lucide-react";
 import kitFlatlay from "../assets/kit-flatlay.jpg";
 import { useCart } from "../context/CartContext";
 import { useProducts } from "../hooks/useProducts";
 import { PLANS } from "../lib/data";
 import { formatPeso as peso } from "../lib/format";
-import { EASE, Eyebrow, Reveal } from "./Reveal";
+import { Eyebrow, Reveal } from "./Reveal";
 
 export default function Pricing() {
-  const [installment, setInstallment] = useState(false);
   const { addItem, openCart } = useCart();
   const products = useProducts();
 
-  // Marketing copy (tagline/features) stays static; price/monthly come from Supabase
-  // once loaded, and a plan disappears here if the owner deactivates its kit there.
+  // Marketing copy (tagline/features) stays static; price comes from Supabase once
+  // loaded, and a plan disappears here if the owner deactivates its kit there.
   const liveKits = products.status === "ready" ? products.data.kits : null;
   const plans = PLANS.filter((p) => !liveKits || liveKits.some((k) => k.id === p.id)).map((p) => {
     const live = liveKits?.find((k) => k.id === p.id);
-    return live ? { ...p, price: live.price, monthly: live.monthly } : p;
+    return live ? { ...p, price: live.price } : p;
   });
 
   return (
@@ -47,12 +44,6 @@ export default function Pricing() {
                 so you're posting flash photos the night it arrives.
               </p>
             </Reveal>
-            <Reveal delay={0.24}>
-              <div className="mt-7 inline-flex items-center gap-2 rounded-full border border-lcd-500/30 bg-lcd-500/10 px-4 py-2 font-mono text-[11px] font-bold uppercase tracking-[0.16em] text-lcd-500">
-                <BadgeCheck className="h-4 w-4" />
-                0% interest · 3-month installments available
-              </div>
-            </Reveal>
           </div>
           <Reveal delay={0.2} className="relative mx-auto w-full max-w-md lg:max-w-none">
             <div
@@ -77,41 +68,8 @@ export default function Pricing() {
           </Reveal>
         </div>
 
-        {/* Toggle */}
-        <Reveal delay={0.1} className="mt-14 flex justify-center">
-          <div
-            role="group"
-            aria-label="Payment schedule"
-            className="relative inline-flex items-center rounded-full border border-ink-900/10 bg-cream-50 p-1.5 shadow-inner"
-          >
-            {[
-              { label: "Pay in full", value: false },
-              { label: "3x 0% interest", value: true },
-            ].map((opt) => (
-              <button
-                key={opt.label}
-                type="button"
-                onClick={() => setInstallment(opt.value)}
-                aria-pressed={installment === opt.value}
-                className={`relative z-10 rounded-full px-5 py-2.5 text-sm font-semibold transition-colors duration-300 sm:px-7 ${
-                  installment === opt.value ? "text-cream-50" : "text-ink-500 hover:text-ink-900"
-                }`}
-              >
-                {installment === opt.value && (
-                  <motion.span
-                    layoutId="billing-pill"
-                    transition={{ type: "spring", bounce: 0.25, duration: 0.55 }}
-                    className="absolute inset-0 -z-10 rounded-full bg-ink-900 shadow-lg shadow-ink-900/25"
-                  />
-                )}
-                {opt.label}
-              </button>
-            ))}
-          </div>
-        </Reveal>
-
         {/* Plans */}
-        <div className="mt-12 grid gap-6 lg:grid-cols-3 lg:items-stretch">
+        <div className="mt-14 grid gap-6 lg:grid-cols-3 lg:items-stretch">
           {plans.map((plan, i) => (
             <Reveal key={plan.id} delay={i * 0.1} className="h-full">
               <article
@@ -150,26 +108,19 @@ export default function Pricing() {
                   </p>
 
                   <div className="mt-6 flex items-end gap-2">
-                    <AnimatePresence mode="popLayout" initial={false}>
-                      <motion.p
-                        key={installment ? "monthly" : "full"}
-                        initial={{ opacity: 0, y: 14 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        exit={{ opacity: 0, y: -14 }}
-                        transition={{ duration: 0.35, ease: EASE }}
-                        className={`font-display text-5xl font-bold tracking-tight ${
-                          plan.popular ? "text-cream-50" : "text-ink-900"
-                        }`}
-                      >
-                        {peso(installment ? plan.monthly : plan.price)}
-                      </motion.p>
-                    </AnimatePresence>
+                    <p
+                      className={`font-display text-5xl font-bold tracking-tight ${
+                        plan.popular ? "text-cream-50" : "text-ink-900"
+                      }`}
+                    >
+                      {peso(plan.price)}
+                    </p>
                     <span
                       className={`pb-1.5 text-sm font-medium ${
                         plan.popular ? "text-cream-100/50" : "text-ink-400"
                       }`}
                     >
-                      {installment ? "/month · 3x" : "one-time"}
+                      one-time
                     </span>
                   </div>
 
@@ -232,7 +183,7 @@ export default function Pricing() {
             </div>
             <p className="flex items-center gap-2 text-xs text-ink-400">
               <CreditCard className="h-3.5 w-3.5" />
-              7-day love-it-or-return policy on every order
+              Full disclosure + video proof before every unit ships
             </p>
           </div>
         </Reveal>

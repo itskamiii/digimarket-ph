@@ -22,7 +22,6 @@ export type KitRow = {
   id: string;
   name: string;
   price_php: number;
-  monthly_php: number;
   is_active: boolean;
 };
 
@@ -53,7 +52,6 @@ export type CheckoutRequestBody = {
   customer: { name: string; email: string; phone: string };
   shipping: ShippingAddress;
   fulfillmentMethod: "online" | "cod";
-  installmentPlan?: "full" | "3x";
 };
 
 export type OrderRow = {
@@ -64,7 +62,6 @@ export type OrderRow = {
   shipping_address: ShippingAddress;
   fulfillment_method: "online" | "cod";
   payment_method: string | null;
-  installment_plan: "full" | "3x";
   status: OrderStatusValue;
   subtotal_php: number;
   shipping_fee_php: number;

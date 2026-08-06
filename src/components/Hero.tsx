@@ -61,7 +61,6 @@ export default function Hero() {
             <span className="inline-flex items-center gap-2.5 rounded-full border border-ink-900/10 bg-cream-50/80 px-4 py-2 font-mono text-[11px] font-bold uppercase tracking-[0.2em] text-ink-700 shadow-sm backdrop-blur">
               <span className="h-2 w-2 rounded-full bg-flash-500 animate-pulse-dot" />
               14 Units Live
-              <span className="rounded-full bg-ink-900 px-2 py-0.5 text-[9px] text-cream-50">+40</span>
             </span>
           </motion.div>
 

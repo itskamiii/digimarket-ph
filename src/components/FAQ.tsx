@@ -92,8 +92,8 @@ export default function FAQ() {
           </Reveal>
           <Reveal delay={0.16}>
             <p className="mt-5 max-w-md text-base leading-relaxed text-ink-500">
-              Everything you're wondering before you cop — condition, shipping, payment, and the
-              warranty that's got your back.
+              Everything you're wondering before you cop — condition, shipping, payment, and our
+              policies.
             </p>
           </Reveal>
           <Reveal delay={0.24}>

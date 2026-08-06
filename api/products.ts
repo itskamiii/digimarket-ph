@@ -45,7 +45,7 @@ export async function GET() {
       items: digicams.filter((u) => (u.brand ?? "Others") === brand).map(toCatalogItem),
     }));
 
-    const kitsPayload = kits.map((kit) => ({ id: kit.id, price: kit.price_php, monthly: kit.monthly_php }));
+    const kitsPayload = kits.map((kit) => ({ id: kit.id, price: kit.price_php }));
 
     return Response.json(
       { cameras, camcorders, digicamsByBrand, kits: kitsPayload },

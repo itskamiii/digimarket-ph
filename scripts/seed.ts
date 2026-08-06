@@ -119,7 +119,6 @@ async function main() {
     id: plan.id,
     name: plan.name,
     price_php: plan.price,
-    monthly_php: plan.monthly,
     is_active: true,
   }));
   const { error: kitsError } = await supabase.from("kits").upsert(kits, { onConflict: "id" });

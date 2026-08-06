@@ -76,11 +76,6 @@ export const FEATURES = [
     body: "The legendary point-and-shoot pop-up flash that turns any inuman, rooftop, or jeepney ride into a full photoshoot. Night mode, unlocked.",
   },
   {
-    icon: "shield",
-    title: "3 days with terms and conditions",
-    body: "Shutter clicks are covered. If your unit acts up within 3 days of delivery, we repair or replace it — terms and conditions apply.",
-  },
-  {
     icon: "sparkles",
     title: "Rare finds, fair prices",
     body: "Curated drops of Canon, Sony, Fujifilm, and Olympus — hunted from ukay-ukays and Japan surplus to garage sales, priced for students.",
@@ -123,7 +118,7 @@ export const TESTIMONIALS = [
   },
   {
     quote:
-      "Was skeptical about buying a 20-year-old camera online, but the 6-month warranty sealed it. 3 months in, zero issues. Best 4,990 I've spent.",
+      "Was skeptical about buying a 20-year-old camera online, but they sent a video proving it worked before it even shipped. 3 months in, zero issues. Best 4,990 I've spent.",
     name: "Sam T.",
     meta: "22 · Makati",
     initials: "ST",
@@ -144,15 +139,14 @@ export type Plan = {
   name: string;
   tagline: string;
   price: number;
-  monthly: number;
   features: string[];
   cta: string;
   popular?: boolean;
 };
 
 // Marketing copy (tagline/features/cta) stays static — it doesn't change daily.
-// price/monthly here are seed defaults for supabase/schema.sql's `kits` table;
-// useProducts() overrides them with the live values from Supabase at runtime,
+// price here is a seed default for supabase/schema.sql's `kits` table;
+// useProducts() overrides it with the live value from Supabase at runtime,
 // so this file is not what customers are actually charged.
 export const PLANS: Plan[] = [
   {
@@ -160,12 +154,10 @@ export const PLANS: Plan[] = [
     name: "Point & Shoot",
     tagline: "Your first digicam. Keep it simple.",
     price: 2990,
-    monthly: 997,
     features: [
       "1 digicam (your pick from the drop)",
       "Wrist strap + 4GB SD card",
       "USB card reader for instant uploads",
-      "30-day warranty",
     ],
     cta: "Start simple",
   },
@@ -174,14 +166,13 @@ export const PLANS: Plan[] = [
     name: "The Y2K Starter",
     tagline: "The full 2004 experience, out of the box.",
     price: 4990,
-    monthly: 1663,
     popular: true,
     features: [
       "Everything in Point & Shoot",
       "Curated camera — our best units only",
       "Retro patterned strap + mini tripod",
       "\u201CShoot Like It's 2004\u201D guide zine",
-      "6-month warranty + free shipping",
+      "Free shipping",
     ],
     cta: "Get the Starter",
   },
@@ -190,13 +181,11 @@ export const PLANS: Plan[] = [
     name: "The Creator's Kit",
     tagline: "Two cameras. One for flash, one for daylight.",
     price: 8490,
-    monthly: 2830,
     features: [
       "Everything in Y2K Starter",
       "2 cameras — night + daylight specialists",
       "Spare battery + hard-shell case",
       "Early access to every new drop",
-      "12-month warranty",
     ],
     cta: "Go full creator",
   },
@@ -220,8 +209,12 @@ export const FAQS = [
     a: "Metro Manila: next day. Luzon: 1–3 days. Visayas & Mindanao: 3–5 days. Every order ships with tracking, and we package cameras in bubble-wrap armor. Shipping is free on Y2K Starter and up.",
   },
   {
-    q: "What if it arrives broken or acts up later?",
-    a: "If it arrives damaged, we replace it within 7 days — no questions. Every camera also carries a 6-month warranty (12 months on Creator's Kit) covering repairs or replacement. Just message us and we'll handle it.",
+    q: "Can I return or exchange a unit?",
+    a: "No — given the nature of used cameras (sensitive to handling, may carry pre-existing wear), all sales are final: no returns, refunds, or exchanges under any circumstances. That's why we disclose every known flaw upfront in the listing and send video proof of your exact unit working before it ships. Please ask any questions before you buy. Damage during transit is between you and the courier — file that claim directly with them.",
+  },
+  {
+    q: "Can I reserve a unit instead of paying in full?",
+    a: "Yes, by messaging us directly. Reservations require a 30% down payment plus a 5% reservation fee, with the remaining balance due within 30 days of your down payment (the day it's sent counts as day 1) — we'll send a payment breakdown for reference. Reservations are final: no refund if the 30-day window lapses, no cancellations, and no switching units once your down payment is in.",
   },
   {
     q: "Do I need to know photography?",
@@ -229,7 +222,11 @@ export const FAQS = [
   },
   {
     q: "What payment methods do you accept?",
-    a: "GCash, Maya, bank transfer, credit/debit cards, and Cash on Delivery within Metro Manila. We also offer 0% interest 3-month installments on any kit — because your era shouldn't wait for payday.",
+    a: "GCash, Maya, bank transfer, credit/debit cards, and Cash on Delivery within Metro Manila.",
+  },
+  {
+    q: "How do I actually place an order?",
+    a: "Read the product description fully, then message us on Instagram when you're ready to buy — we'll ask for your name, the unit, complete address, Lalamove pin, contact number, and proof of full payment. Please be sure before confirming: last-minute cancellations affect a small business like ours, and we reserve the right to decline future orders from repeat cancellers.",
   },
 ];
 
@@ -249,7 +246,7 @@ export const FOOTER_LINKS = {
   Support: [
     { label: "FAQ", href: "#faq" },
     { label: "Shipping", href: "#faq" },
-    { label: "Warranty", href: "#faq" },
+    { label: "Policies", href: "#faq" },
     { label: "Contact Us", href: "#cta" },
   ],
 };

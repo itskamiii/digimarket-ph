@@ -1,6 +1,6 @@
 import { AnimatePresence, motion } from "framer-motion";
 import { AlertCircle, Loader2, ShoppingBag, X } from "lucide-react";
-import { useMemo, useState, type FormEvent } from "react";
+import { useState, type FormEvent } from "react";
 import { useCart } from "../context/CartContext";
 import { CheckoutUnavailableError, createCheckout } from "../lib/api";
 import { formatPeso } from "../lib/format";
@@ -20,7 +20,6 @@ function friendlyError(message: string): string {
 
 export default function Checkout({ open, onClose }: { open: boolean; onClose: () => void }) {
   const { items, subtotal, pruneItems, clear } = useCart();
-  const hasKit = useMemo(() => items.some((i) => i.type === "kit"), [items]);
 
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
@@ -31,7 +30,6 @@ export default function Checkout({ open, onClose }: { open: boolean; onClose: ()
   const [province, setProvince] = useState("");
   const [postalCode, setPostalCode] = useState("");
   const [fulfillmentMethod, setFulfillmentMethod] = useState<"online" | "cod">("online");
-  const [installmentPlan, setInstallmentPlan] = useState<"full" | "3x">("full");
 
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -49,7 +47,6 @@ export default function Checkout({ open, onClose }: { open: boolean; onClose: ()
         customer: { name, email, phone },
         shipping: { line1, line2: line2 || undefined, city, province, postalCode },
         fulfillmentMethod,
-        installmentPlan: hasKit ? installmentPlan : "full",
       });
 
       if (result.redirect) {
@@ -193,27 +190,6 @@ export default function Checkout({ open, onClose }: { open: boolean; onClose: ()
                         />
                       </div>
                     </div>
-
-                    {hasKit && (
-                      <div>
-                        <p className="mb-2 text-xs font-bold uppercase tracking-[0.14em] text-ink-400">
-                          Kit payment schedule
-                        </p>
-                        <div className="grid gap-2 sm:grid-cols-2">
-                          <RadioCard
-                            label="Pay in full"
-                            checked={installmentPlan === "full"}
-                            onSelect={() => setInstallmentPlan("full")}
-                          />
-                          <RadioCard
-                            label="3x 0% interest"
-                            hint="Arranged manually with us after checkout"
-                            checked={installmentPlan === "3x"}
-                            onSelect={() => setInstallmentPlan("3x")}
-                          />
-                        </div>
-                      </div>
-                    )}
 
                     {error && (
                       <div className="flex items-start gap-2 rounded-2xl bg-flash-500/10 px-4 py-3 text-sm text-flash-600">

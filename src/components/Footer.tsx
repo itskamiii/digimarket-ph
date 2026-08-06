@@ -1,4 +1,4 @@
-import { Camera } from "lucide-react";
+import logo from "../assets/logo.png";
 import { FOOTER_LINKS } from "../lib/data";
 
 type IconProps = { className?: string };
@@ -52,9 +52,7 @@ export default function Footer() {
           {/* Brand */}
           <div>
             <a href="#top" className="flex items-center gap-2.5" aria-label="Digimarket_PH home">
-              <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-flash-500 text-cream-50 shadow-lg shadow-flash-500/30">
-                <Camera className="h-5 w-5" strokeWidth={2.2} />
-              </span>
+              <img src={logo} alt="" className="h-10 w-10 rounded-full shadow-lg shadow-flash-500/30" width={40} height={40} />
               <span className="font-display text-xl font-bold tracking-tight">
                 digimarket<span className="text-flash-400">_ph</span>
               </span>
@@ -117,7 +115,7 @@ export default function Footer() {
             © 2026 Digimarket_PH · Manila, PH · Made with 💿 &amp; flash
           </p>
           <div className="flex gap-6">
-            {["Privacy", "Terms", "Warranty"].map((l) => (
+            {["Privacy", "Terms", "Policies"].map((l) => (
               <a
                 key={l}
                 href="#top"

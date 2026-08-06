@@ -64,7 +64,6 @@ export async function POST(request: Request) {
   if (body.fulfillmentMethod === "cod" && !isMetroManila(body.shipping.city)) {
     return Response.json({ error: "cod_requires_metro_manila" }, { status: 400 });
   }
-  const installmentPlan = body.installmentPlan === "3x" ? "3x" : "full";
 
   const unitItems = items.filter((i): i is CheckoutItemInput => i.type === "unit");
   const kitItems = items.filter((i): i is CheckoutItemInput => i.type === "kit");
@@ -107,7 +106,6 @@ export async function POST(request: Request) {
     customerPhone: customer.phone.trim(),
     shippingAddress: body.shipping,
     fulfillmentMethod: body.fulfillmentMethod,
-    installmentPlan,
     subtotalPhp,
     status: body.fulfillmentMethod === "cod" ? "cod_pending" : "pending_payment",
   });

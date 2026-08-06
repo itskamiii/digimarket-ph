@@ -11,7 +11,6 @@ create table if not exists orders (
   shipping_address jsonb not null, -- { line1, line2?, city, province, postalCode }
   fulfillment_method text not null check (fulfillment_method in ('online', 'cod')),
   payment_method text, -- 'gcash' | 'paymaya' | 'grab_pay' | 'card' | 'cod', filled in once known
-  installment_plan text not null default 'full' check (installment_plan in ('full', '3x')),
   status text not null default 'pending_payment'
     check (status in ('pending_payment', 'paid', 'cod_pending', 'fulfilled', 'cancelled', 'expired')),
   subtotal_php integer not null,
@@ -48,11 +47,15 @@ create index if not exists units_reserved_order_idx on units(reserved_order_id);
 -- it from the CREATE TABLE above).
 alter table units add column if not exists best_for text;
 
+-- Migration: the 3x-installment feature was fabricated template content, not a real
+-- offer — dropped from orders/kits along with the checkout UI that set/read it.
+alter table orders drop column if exists installment_plan;
+alter table kits drop column if exists monthly_php;
+
 create table if not exists kits (
   id text primary key,
   name text not null,
-  price_php integer not null,      -- pay-in-full price
-  monthly_php integer not null,    -- displayed 3x-installment monthly figure (owner's stated arrangement, not an automated recurring charge)
+  price_php integer not null,
   is_active boolean not null default true
 );
 

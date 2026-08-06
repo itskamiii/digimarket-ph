@@ -83,7 +83,6 @@ export type NewOrderInput = {
   customerPhone: string;
   shippingAddress: ShippingAddress;
   fulfillmentMethod: "online" | "cod";
-  installmentPlan: "full" | "3x";
   subtotalPhp: number;
   status: OrderStatusValue;
 };
@@ -97,7 +96,6 @@ export async function insertOrder(order: NewOrderInput): Promise<OrderRow> {
       customer_phone: order.customerPhone,
       shipping_address: order.shippingAddress,
       fulfillment_method: order.fulfillmentMethod,
-      installment_plan: order.installmentPlan,
       subtotal_php: order.subtotalPhp,
       shipping_fee_php: 0,
       total_php: order.subtotalPhp,

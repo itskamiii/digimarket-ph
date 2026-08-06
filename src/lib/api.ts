@@ -5,7 +5,7 @@ export type ProductsResponse = {
   cameras: Camera[];
   camcorders: CatalogItem[];
   digicamsByBrand: { brand: string; items: CatalogItem[] }[];
-  kits: { id: string; price: number; monthly: number }[];
+  kits: { id: string; price: number }[];
 };
 
 export async function fetchProducts(): Promise<ProductsResponse> {

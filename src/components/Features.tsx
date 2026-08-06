@@ -38,7 +38,7 @@ export default function Features() {
           </Reveal>
         </div>
 
-        <Stagger className="mt-14 grid gap-5 sm:grid-cols-2 lg:mt-16 lg:grid-cols-3">
+        <Stagger className="mt-14 grid gap-5 sm:grid-cols-2 lg:mt-16">
           {FEATURES.map((feature) => {
             const Icon = ICONS[feature.icon] ?? Aperture;
             return (
