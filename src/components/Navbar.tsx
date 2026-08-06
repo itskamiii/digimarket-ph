@@ -89,7 +89,7 @@ export default function Navbar({ products }: { products: ProductsState }) {
 
           <div className="flex items-center gap-3">
             <a
-              href="#kits"
+              href="#drop"
               className="btn-shine group hidden items-center gap-2 rounded-full bg-ink-900 px-5 py-2.5 text-sm font-semibold text-cream-50 shadow-lg shadow-ink-900/25 transition-all duration-300 hover:-translate-y-0.5 hover:bg-ink-800 hover:shadow-xl hover:shadow-ink-900/30 sm:inline-flex"
             >
               <ShoppingBag className="h-4 w-4 transition-transform duration-300 group-hover:-rotate-12" />
@@ -153,7 +153,7 @@ export default function Navbar({ products }: { products: ProductsState }) {
               ))}
             </ul>
             <a
-              href="#kits"
+              href="#drop"
               onClick={() => setOpen(false)}
               className="mt-3 flex items-center justify-center gap-2 rounded-2xl bg-ink-900 px-5 py-4 font-semibold text-cream-50 shadow-lg"
             >

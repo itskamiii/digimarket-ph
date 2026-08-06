@@ -8,7 +8,6 @@ import Footer from "./components/Footer";
 import Hero from "./components/Hero";
 import Navbar from "./components/Navbar";
 import OrderStatus from "./components/OrderStatus";
-import Pricing from "./components/Pricing";
 import Showcase from "./components/Showcase";
 import SocialProof from "./components/SocialProof";
 import Testimonials from "./components/Testimonials";
@@ -35,7 +34,6 @@ function AppShell() {
         <Features />
         <Showcase products={products} />
         <Testimonials />
-        <Pricing />
         <FAQ />
         <CTA />
       </main>

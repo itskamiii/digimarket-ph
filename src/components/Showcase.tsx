@@ -1,3 +1,4 @@
+import { CreditCard } from "lucide-react";
 import type { ProductsState } from "../hooks/useProducts";
 import { CatalogList } from "./Catalog";
 import { Eyebrow, Reveal } from "./Reveal";
@@ -37,6 +38,25 @@ export default function Showcase({ products }: { products: ProductsState }) {
           <p className="font-mono text-[11px] font-bold uppercase tracking-[0.24em] text-ink-400">
             Unit shown may vary slightly — that's the beauty of vintage
           </p>
+        </Reveal>
+
+        <Reveal delay={0.15}>
+          <div className="mt-8 flex flex-col items-center justify-center gap-4 text-center">
+            <div className="flex flex-wrap items-center justify-center gap-2.5">
+              {["GCash", "Maya", "Visa", "Mastercard", "COD Metro Manila"].map((p) => (
+                <span
+                  key={p}
+                  className="rounded-full border border-ink-900/10 bg-cream-50 px-4 py-2 font-mono text-[10px] font-bold uppercase tracking-[0.16em] text-ink-500 transition-colors duration-300 hover:border-flash-500/40 hover:text-ink-900"
+                >
+                  {p}
+                </span>
+              ))}
+            </div>
+            <p className="flex items-center gap-2 text-xs text-ink-400">
+              <CreditCard className="h-3.5 w-3.5" />
+              Full disclosure + video proof before every unit ships
+            </p>
+          </div>
         </Reveal>
       </div>
     </section>

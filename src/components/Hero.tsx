@@ -139,7 +139,7 @@ export default function Hero() {
           <div className="relative overflow-hidden rounded-[2.5rem] border border-ink-900/10 bg-cream-50 shadow-[0_40px_90px_-30px_rgba(27,23,18,0.45)]">
             <img
               src={heroCamera}
-              alt="Flatlay of the 27th Collection — ten restored vintage digital cameras with a leather case, styled by Digimarket_PH"
+              alt="Flatlay of the 27th Collection — ten vintage digital cameras with a leather case, styled by Digimarket_PH"
               className="aspect-[4/5] w-full object-cover"
               width={880}
               height={1100}

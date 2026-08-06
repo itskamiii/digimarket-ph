@@ -3,7 +3,6 @@ export const NAV_LINKS = [
   { label: "Why Digicam", href: "#why" },
   { label: "Full Catalog", href: "#catalog" },
   { label: "Reviews", href: "#reviews" },
-  { label: "Kits", href: "#kits" },
   { label: "FAQ", href: "#faq" },
 ];
 
@@ -230,7 +229,7 @@ export const FAQS = [
   },
   {
     q: "What condition do the cameras arrive in?",
-    a: "Excellent. Every unit goes through our 14-point restoration: sensor dust-out, lens cleaning, fresh battery, flash test, and full function check. Cosmetic wear (tiny scratches, scuffs) may remain — it's part of the charm, but everything that matters works perfectly.",
+    a: "Excellent. Every unit gets a full prep pass — sensor dust-out, lens cleaning, fresh battery, flash test, and full function check — before it ships. Cosmetic wear (tiny scratches, scuffs) may remain — it's part of the charm, but everything that matters works perfectly.",
   },
   {
     q: "Do they work with modern SD cards?",
@@ -265,13 +264,12 @@ export const FAQS = [
 export const FOOTER_LINKS = {
   Shop: [
     { label: "The Drop", href: "#drop" },
-    { label: "Kits & Bundles", href: "#kits" },
-    { label: "Accessories", href: "#kits" },
+    { label: "Accessories", href: "#drop" },
     { label: "Gift Cards", href: "#cta" },
   ],
   Company: [
     { label: "Our Story", href: "#why" },
-    { label: "Restoration Process", href: "#why" },
+    { label: "Our Process", href: "#why" },
     { label: "Reviews", href: "#reviews" },
     { label: "Careers", href: "#cta" },
   ],
