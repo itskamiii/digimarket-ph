@@ -1,5 +1,5 @@
 import { AnimatePresence, motion } from "framer-motion";
-import { ArrowUpRight, Check, Plus, X } from "lucide-react";
+import { ArrowUpRight, Check, ImageOff, Plus, X } from "lucide-react";
 import { useState } from "react";
 import { useCart } from "../context/CartContext";
 import type { ProductsState } from "../hooks/useProducts";
@@ -60,7 +60,10 @@ function CameraCard({ item, onViewInfo }: { item: CatalogItem; onViewInfo: (item
               className="aspect-[4/4.6] w-full object-cover transition-transform duration-700 ease-out group-hover:scale-[1.06] group-hover:rotate-1"
             />
           ) : (
-            <div className="aspect-[4/4.6] w-full" />
+            <div className="flex aspect-[4/4.6] w-full flex-col items-center justify-center gap-2 text-ink-300">
+              <ImageOff className="h-8 w-8" strokeWidth={1.5} />
+              <span className="font-mono text-[10px] font-bold uppercase tracking-[0.14em]">No photo</span>
+            </div>
           )}
           <div className="absolute inset-0 bg-gradient-to-t from-ink-900/25 via-transparent to-transparent opacity-0 transition-opacity duration-500 group-hover:opacity-100" />
 
@@ -103,10 +106,14 @@ function CameraCard({ item, onViewInfo }: { item: CatalogItem; onViewInfo: (item
       <div className="flex flex-1 flex-col justify-end p-5 pt-4 sm:p-6 sm:pt-4">
         <div className="flex items-end justify-between gap-3">
           <div>
-            {item.oldPrice && (
-              <p className="font-mono text-[11px] text-ink-400 line-through">{formatPeso(item.oldPrice)}</p>
+            {!isUnavailable && (
+              <>
+                {item.oldPrice && (
+                  <p className="font-mono text-[11px] text-ink-400 line-through">{formatPeso(item.oldPrice)}</p>
+                )}
+                <p className="font-display text-2xl font-bold tracking-tight text-ink-900">{formatPeso(item.price)}</p>
+              </>
             )}
-            <p className="font-display text-2xl font-bold tracking-tight text-ink-900">{formatPeso(item.price)}</p>
           </div>
 
           <motion.button
