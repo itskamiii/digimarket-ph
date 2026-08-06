@@ -1,8 +1,7 @@
 import type { CheckoutRequestBody } from "../../server/types";
-import type { Camera, CatalogItem } from "./data";
+import type { CatalogItem } from "./data";
 
 export type ProductsResponse = {
-  cameras: Camera[];
   camcorders: CatalogItem[];
   digicams: CatalogItem[];
   kits: { id: string; price: number }[];

@@ -12,10 +12,11 @@ export default function Navbar({ products }: { products: ProductsState }) {
   const [open, setOpen] = useState(false);
   const { itemCount, openCart } = useCart();
 
-  // "The drop" = the featured units still available — updates as units sell.
+  // Total units still available across camcorders + digicams — updates as units sell.
   const liveUnitsCount =
     products.status === "ready"
-      ? products.data.cameras.filter((c) => c.availability === "available").length
+      ? products.data.camcorders.filter((c) => c.availability === "available").length +
+        products.data.digicams.filter((c) => c.availability === "available").length
       : null;
 
   useEffect(() => {

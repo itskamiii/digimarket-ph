@@ -42,12 +42,12 @@ export const STATS = [
   { value: 100, suffix: "%", label: "tested in Manila" },
 ];
 
-// Camera/CatalogItem inventory (units, camcorders, digicams) now lives in Supabase —
+// CatalogItem inventory (units — camcorders, digicams) now lives in Supabase —
 // see supabase/schema.sql and src/lib/api.ts. src/lib/seed-data.ts holds the original
 // static content, used only once by scripts/seed.ts to populate the database.
 export type Availability = "available" | "sold" | "reserved";
 
-export type Camera = {
+export type CatalogItem = {
   id: string;
   name: string;
   price: number;
@@ -55,17 +55,9 @@ export type Camera = {
   badge?: string;
   bestFor?: string;
   availability: Availability;
-  image: string;
-  tint: string;
-};
-
-export type CatalogItem = {
-  id: string;
-  name: string;
-  price: number;
-  availability: Availability;
-  description?: string;
   image?: string;
+  tint?: string;
+  description?: string;
 };
 
 export const FEATURES = [
