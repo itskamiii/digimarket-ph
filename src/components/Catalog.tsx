@@ -5,7 +5,7 @@ import { useCart } from "../context/CartContext";
 import type { ProductsState } from "../hooks/useProducts";
 import type { Availability, CatalogItem } from "../lib/data";
 import { formatPeso } from "../lib/format";
-import { EASE, Reveal, Stagger, StaggerItem } from "./Reveal";
+import { EASE, Reveal } from "./Reveal";
 
 function StatusPill({ availability }: { availability: Availability }) {
   if (availability === "sold") {
@@ -296,13 +296,19 @@ export function CatalogList({ products }: { products: ProductsState }) {
         <p className="mt-10 text-center text-sm text-flash-600">{products.message}</p>
       )}
       {products.status === "ready" && (
-        <Stagger className="mt-8 grid gap-6 sm:grid-cols-2 lg:grid-cols-3" amount={0.05}>
-          {activeItems.map((item) => (
-            <StaggerItem key={item.id} className="h-full">
+        <div className="mt-8 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+          {activeItems.map((item, i) => (
+            <motion.div
+              key={item.id}
+              className="h-full"
+              initial={{ opacity: 0, y: 16 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.4, delay: Math.min(i, 8) * 0.04, ease: EASE }}
+            >
               <CameraCard item={item} onViewInfo={setInfoItem} />
-            </StaggerItem>
+            </motion.div>
           ))}
-        </Stagger>
+        </div>
       )}
 
       <UnitInfoModal item={infoItem} onClose={() => setInfoItem(null)} />
