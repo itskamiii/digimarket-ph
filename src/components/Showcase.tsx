@@ -13,7 +13,7 @@ export default function Showcase({ products }: { products: ProductsState }) {
         <div className="flex flex-col gap-6 md:flex-row md:items-end md:justify-between">
           <div className="max-w-xl">
             <Reveal>
-              <Eyebrow>The current drop</Eyebrow>
+              <Eyebrow>Available units</Eyebrow>
             </Reveal>
             <Reveal delay={0.08}>
               <h2 className="mt-5 font-display text-3xl font-bold tracking-tight text-ink-900 sm:text-5xl">

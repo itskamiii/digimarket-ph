@@ -266,16 +266,38 @@ function UnitInfoModal({ item, onClose }: { item: CatalogItem | null; onClose: (
   );
 }
 
+// Digicam brand isn't a clean DB field (the `brand` column only distinguishes
+// Sony/Nikon/Others from the old grouping) — every unit name reliably starts with its
+// real brand word, so bucket off that instead of touching the schema.
+const KNOWN_DIGICAM_BRANDS = ["Sony", "Nikon", "Casio", "Panasonic", "Olympus"];
+function getBrandBucket(name: string): string {
+  const first = name.split(" ")[0];
+  return KNOWN_DIGICAM_BRANDS.includes(first) ? first : "Others";
+}
+
 // Folded into Showcase — see App.tsx / Showcase.tsx. Renders the tab switcher + full
 // image-card grid (every unit — available, reserved, and sold), no section heading of
 // its own; Showcase's heading covers it.
 export function CatalogList({ products }: { products: ProductsState }) {
   const [active, setActive] = useState<"camcorders" | "digicams">("camcorders");
+  const [brandFilter, setBrandFilter] = useState<string>("all");
   const [infoItem, setInfoItem] = useState<CatalogItem | null>(null);
 
   const camcorders = products.status === "ready" ? products.data.camcorders : [];
   const digicams = products.status === "ready" ? products.data.digicams : [];
-  const activeItems = active === "camcorders" ? camcorders : digicams;
+
+  const digicamBrands = [...KNOWN_DIGICAM_BRANDS, "Others"].filter((b) =>
+    digicams.some((item) => getBrandBucket(item.name) === b)
+  );
+  const filteredDigicams =
+    brandFilter === "all" ? digicams : digicams.filter((item) => getBrandBucket(item.name) === brandFilter);
+
+  const activeItems = active === "camcorders" ? camcorders : filteredDigicams;
+
+  const selectTab = (tab: "camcorders" | "digicams") => {
+    setActive(tab);
+    setBrandFilter("all");
+  };
 
   return (
     <div id="catalog" className="mt-12 lg:mt-16">
@@ -285,7 +307,7 @@ export function CatalogList({ products }: { products: ProductsState }) {
             <button
               key={tab}
               type="button"
-              onClick={() => setActive(tab)}
+              onClick={() => selectTab(tab)}
               className={`rounded-full px-4 py-2 font-mono text-[11px] font-bold uppercase tracking-[0.14em] transition-colors duration-300 ${
                 active === tab ? "bg-ink-900 text-cream-50" : "bg-ink-900/6 text-ink-500 hover:bg-ink-900/12"
               }`}
@@ -300,6 +322,25 @@ export function CatalogList({ products }: { products: ProductsState }) {
           </p>
         </Reveal>
       </div>
+
+      {active === "digicams" && digicamBrands.length > 0 && (
+        <Reveal delay={0.2} className="mt-3 flex flex-wrap gap-1.5">
+          {["all", ...digicamBrands].map((b) => (
+            <button
+              key={b}
+              type="button"
+              onClick={() => setBrandFilter(b)}
+              className={`rounded-full border px-3 py-1.5 font-mono text-[10px] font-bold uppercase tracking-[0.12em] transition-colors duration-300 ${
+                brandFilter === b
+                  ? "border-flash-500 bg-flash-500 text-cream-50"
+                  : "border-ink-900/10 text-ink-400 hover:border-flash-500 hover:text-flash-500"
+              }`}
+            >
+              {b === "all" ? "All" : b}
+            </button>
+          ))}
+        </Reveal>
+      )}
 
       {products.status === "loading" && (
         <p className="mt-10 text-center text-sm text-ink-400">Loading the catalog…</p>
