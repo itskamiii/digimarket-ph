@@ -7,6 +7,15 @@ import type { Availability, CatalogItem } from "../lib/data";
 import { formatPeso } from "../lib/format";
 import { EASE, Reveal } from "./Reveal";
 
+// Body condition score lives inside the free-text description (e.g. "Body: 9/10
+// clean aesthetic condition" or "- body: 8.5 /10 scratches") — wording/casing varies
+// per unit since it's copied from each camera's info sheet, not a structured field.
+function extractGrade(description?: string): string | null {
+  if (!description) return null;
+  const match = description.match(/body\s*:?\s*(\d+(?:\.\d+)?)\s*\/\s*10/i);
+  return match ? `${match[1]}/10` : null;
+}
+
 function StatusPill({ availability }: { availability: Availability }) {
   if (availability === "sold") {
     return (
@@ -39,6 +48,7 @@ function CameraCard({ item, onViewInfo }: { item: CatalogItem; onViewInfo: (item
   };
 
   const showAdded = justAdded || inBag;
+  const grade = extractGrade(item.description);
 
   return (
     <article className="group relative flex h-full flex-col overflow-hidden rounded-[1.75rem] border border-ink-900/8 bg-cream-50 shadow-[0_2px_20px_-8px_rgba(27,23,18,0.12)] transition-all duration-500 hover:-translate-y-2 hover:shadow-[0_30px_60px_-24px_rgba(27,23,18,0.3)]">
@@ -92,9 +102,11 @@ function CameraCard({ item, onViewInfo }: { item: CatalogItem; onViewInfo: (item
         <div className="flex items-start justify-between gap-3 p-5 pb-0 sm:px-6 sm:pt-6">
           <div>
             <h3 className="font-display text-lg font-bold tracking-tight text-ink-900">{item.name}</h3>
-            <p className="mt-0.5 font-mono text-[10px] font-bold uppercase tracking-[0.2em] text-ink-400">
-              Grade A
-            </p>
+            {grade && (
+              <p className="mt-0.5 font-mono text-[10px] font-bold uppercase tracking-[0.2em] text-ink-400">
+                {grade}
+              </p>
+            )}
           </div>
           <span className="mt-1 flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-ink-900/10 text-ink-400 transition-all duration-300 group-hover:rotate-45 group-hover:border-flash-500 group-hover:text-flash-500">
             <ArrowUpRight className="h-4 w-4" />
