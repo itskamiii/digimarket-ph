@@ -17,7 +17,7 @@ export default function Testimonials() {
     <section id="reviews" className="relative overflow-hidden py-20 lg:py-28">
       <div
         aria-hidden="true"
-        className="pointer-events-none absolute left-1/2 top-0 h-[380px] w-[720px] -translate-x-1/2 rounded-full bg-flash-300/12 blur-[130px]"
+        className="pointer-events-none absolute left-1/2 top-24 h-[380px] w-[720px] -translate-x-1/2 rounded-full bg-flash-300/12 blur-[130px]"
       />
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <div className="mx-auto max-w-2xl text-center">
