@@ -16,7 +16,7 @@ export default function Features() {
     <section id="why" className="relative overflow-hidden py-20 lg:py-28">
       <div
         aria-hidden="true"
-        className="pointer-events-none absolute right-0 top-0 h-96 w-96 rounded-full bg-flash-300/15 blur-[120px]"
+        className="pointer-events-none absolute right-0 top-32 h-96 w-96 rounded-full bg-flash-300/15 blur-[120px]"
       />
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <div className="mx-auto max-w-2xl text-center">
