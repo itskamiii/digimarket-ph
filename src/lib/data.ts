@@ -21,6 +21,7 @@ export const HASHTAGS = [
   "#Y2KCamera",
   "#VintageCamera",
   "#CCDColors",
+  "#digimarket_ph",
   "#Y2KAesthetic",
   "#FilmicLook",
   "#NostalgicVibe",

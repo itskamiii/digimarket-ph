@@ -26,14 +26,14 @@ export default function Testimonials() {
           </Reveal>
           <Reveal delay={0.08}>
             <h2 className="mt-5 font-display text-3xl font-bold tracking-tight text-ink-900 sm:text-5xl">
-              2,400+ five-star reviews.
+              Countless customer reviews.
               <br />
               <span className="text-flash-500">Zero filters used.</span>
             </h2>
           </Reveal>
           <Reveal delay={0.16}>
             <p className="mt-5 text-base leading-relaxed text-ink-500 sm:text-lg">
-              From Manila to Davao, the era is spreading. Here's what the group chat is saying.
+              From Manila to Davao, the era is spreading.
             </p>
           </Reveal>
         </div>
