@@ -1,8 +1,8 @@
 import { motion } from "framer-motion";
-import { ArrowUpRight, Check, Flame, Plus } from "lucide-react";
+import { ArrowUpRight, Check, Plus } from "lucide-react";
 import { useState } from "react";
 import { useCart } from "../context/CartContext";
-import { useProducts } from "../hooks/useProducts";
+import type { ProductsState } from "../hooks/useProducts";
 import type { Camera } from "../lib/data";
 import { formatPeso } from "../lib/format";
 import { CatalogList } from "./Catalog";
@@ -39,12 +39,6 @@ function CameraCard({ camera }: { camera: Camera }) {
 
         {/* Badges */}
         <div className="absolute left-4 right-4 top-4 flex flex-col items-start gap-2">
-          {camera.badge && (
-            <span className="flex items-center gap-1.5 rounded-full bg-ink-900/85 px-3 py-1.5 font-mono text-[10px] font-bold uppercase tracking-[0.16em] text-cream-50 backdrop-blur">
-              <Flame className="h-3 w-3 text-flash-400" />
-              {camera.badge}
-            </span>
-          )}
           {camera.bestFor && (
             <span className="rounded-xl bg-ink-900/70 px-2.5 py-1.5 text-[10px] leading-snug text-cream-100 backdrop-blur">
               <span className="font-bold uppercase tracking-wide text-flash-400">Best for </span>
@@ -122,9 +116,7 @@ function CameraCard({ camera }: { camera: Camera }) {
   );
 }
 
-export default function Showcase() {
-  const products = useProducts();
-
+export default function Showcase({ products }: { products: ProductsState }) {
   return (
     <section id="drop" className="relative overflow-hidden py-20 lg:py-28">
       <div

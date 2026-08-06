@@ -32,8 +32,8 @@ export default function Features() {
           </Reveal>
           <Reveal delay={0.16}>
             <p className="mt-5 text-base leading-relaxed text-ink-500 sm:text-lg">
-              Every camera in our drop is hunted down, restored, and tested by hand in Manila —
-              then sent to you with everything you need to start shooting the same day.
+              Every camera in our drop is hunted down and tested by hand in Manila — then sent to
+              you with everything you need to start shooting the same day.
             </p>
           </Reveal>
         </div>

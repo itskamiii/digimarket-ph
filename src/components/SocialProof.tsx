@@ -93,21 +93,6 @@ export default function SocialProof() {
           ))}
         </dl>
       </div>
-
-      {/* About statement */}
-      <div className="relative overflow-hidden bg-ink-900 py-16 lg:py-20">
-        <div
-          aria-hidden="true"
-          className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,rgba(255,77,0,0.16),transparent_60%)]"
-        />
-        <Reveal className="relative mx-auto max-w-3xl px-6 text-center">
-          <p className="font-display text-xl font-medium leading-relaxed text-cream-100 sm:text-2xl">
-            Established in 2023, Digimarket_PH is dedicated to bringing timeless nostalgia back to
-            life through carefully curated vintage digital cameras, Y2K point-and-shoots, and
-            classic retro camcorders.
-          </p>
-        </Reveal>
-      </div>
     </section>
   );
 }

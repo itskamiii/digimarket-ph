@@ -3,13 +3,20 @@ import { Menu, ShoppingBag, X } from "lucide-react";
 import { useEffect, useState } from "react";
 import logo from "../assets/logo.png";
 import { useCart } from "../context/CartContext";
+import type { ProductsState } from "../hooks/useProducts";
 import { NAV_LINKS } from "../lib/data";
 import { EASE } from "./Reveal";
 
-export default function Navbar() {
+export default function Navbar({ products }: { products: ProductsState }) {
   const [scrolled, setScrolled] = useState(false);
   const [open, setOpen] = useState(false);
   const { itemCount, openCart } = useCart();
+
+  // "The drop" = the featured units still available — updates as units sell.
+  const liveUnitsCount =
+    products.status === "ready"
+      ? products.data.cameras.filter((c) => c.availability === "available").length
+      : null;
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 24);
@@ -30,8 +37,7 @@ export default function Navbar() {
       {/* Announcement bar */}
       <div className="bg-ink-900 text-cream-100">
         <p className="mx-auto flex max-w-7xl items-center justify-center gap-2 px-4 py-2 text-center font-mono text-[10px] font-bold uppercase tracking-[0.2em] sm:text-[11px]">
-          <span className="hidden sm:inline">⚡ New drop live — 14 restored units only</span>
-          <span className="sm:hidden">⚡ New drop live — 14 units only</span>
+          <span>⚡ New drop live{liveUnitsCount !== null ? ` — ${liveUnitsCount} units only` : ""}</span>
           <span className="text-flash-400">·</span>
           <span className="hidden md:inline">Free shipping on Y2K Starter &amp; up</span>
           <span className="md:hidden">Free shipping ₱4,990+</span>

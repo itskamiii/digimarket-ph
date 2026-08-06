@@ -80,7 +80,7 @@ export const FEATURES = [
   {
     icon: "zap",
     title: "Flash that goes off",
-    body: "The legendary point-and-shoot pop-up flash that turns any inuman, rooftop, or jeepney ride into a full photoshoot. Night mode, unlocked.",
+    body: "The legendary point-and-shoot flash that turns any inuman, rooftop, or jeepney ride into a full photoshoot. Night mode, unlocked.",
   },
   {
     icon: "sparkles",

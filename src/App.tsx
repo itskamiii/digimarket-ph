@@ -13,10 +13,12 @@ import Showcase from "./components/Showcase";
 import SocialProof from "./components/SocialProof";
 import Testimonials from "./components/Testimonials";
 import { CartProvider, useCart } from "./context/CartContext";
+import { useProducts } from "./hooks/useProducts";
 
 function AppShell() {
   const { closeCart } = useCart();
   const [checkoutOpen, setCheckoutOpen] = useState(false);
+  const products = useProducts();
 
   return (
     <div className="min-h-screen overflow-x-clip bg-cream-100">
@@ -26,12 +28,12 @@ function AppShell() {
       >
         Skip to content
       </a>
-      <Navbar />
+      <Navbar products={products} />
       <main>
         <Hero />
         <SocialProof />
         <Features />
-        <Showcase />
+        <Showcase products={products} />
         <Testimonials />
         <Pricing />
         <FAQ />
