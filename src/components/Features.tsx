@@ -44,9 +44,15 @@ export default function Features() {
             return (
               <StaggerItem key={feature.title}>
                 <article className="group relative h-full overflow-hidden rounded-3xl border border-ink-900/8 bg-cream-50/80 p-7 shadow-[0_2px_20px_-8px_rgba(27,23,18,0.12)] backdrop-blur transition-all duration-500 hover:-translate-y-1.5 hover:shadow-[0_24px_50px_-20px_rgba(27,23,18,0.25)]">
+                  {/* Corner glow — a radial-gradient, not filter:blur, since Safari doesn't
+                      reliably clip a blurred child to a rounded overflow-hidden parent. */}
                   <div
                     aria-hidden="true"
-                    className="absolute -right-16 -top-16 h-40 w-40 rounded-full bg-flash-400/10 blur-2xl transition-all duration-500 group-hover:bg-flash-400/25"
+                    className="pointer-events-none absolute inset-0 rounded-3xl bg-[radial-gradient(160px_circle_at_100%_0%,rgba(255,106,43,0.14),transparent_70%)]"
+                  />
+                  <div
+                    aria-hidden="true"
+                    className="pointer-events-none absolute inset-0 rounded-3xl bg-[radial-gradient(160px_circle_at_100%_0%,rgba(255,106,43,0.32),transparent_70%)] opacity-0 transition-opacity duration-500 group-hover:opacity-100"
                   />
                   <div className="relative">
                     <span className="inline-flex h-12 w-12 items-center justify-center rounded-2xl bg-ink-900 text-cream-50 shadow-lg shadow-ink-900/20 transition-all duration-500 group-hover:-rotate-6 group-hover:scale-110 group-hover:bg-flash-500 group-hover:shadow-flash-500/40">

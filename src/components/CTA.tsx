@@ -42,11 +42,12 @@ export default function CTA() {
     <section id="cta" className="relative px-4 py-20 sm:px-6 lg:px-8 lg:py-28">
       <Reveal className="mx-auto max-w-6xl">
         <div className="grain relative overflow-hidden rounded-[2.5rem] bg-ink-900 px-6 py-16 text-center shadow-[0_60px_120px_-40px_rgba(27,23,18,0.6)] sm:px-12 lg:px-20 lg:py-24">
-          {/* Ambient */}
+          {/* Ambient — radial-gradients, not filter:blur, since Safari doesn't reliably
+              clip a blurred child to a rounded overflow-hidden parent. */}
           <div aria-hidden="true" className="pointer-events-none absolute inset-0">
-            <div className="absolute -top-40 left-1/2 h-[420px] w-[720px] -translate-x-1/2 rounded-full bg-flash-500/25 blur-[120px]" />
-            <div className="absolute -bottom-24 -left-16 h-64 w-64 rounded-full bg-lcd-500/15 blur-[100px]" />
-            <div className="absolute -bottom-24 -right-16 h-64 w-64 rounded-full bg-flash-400/15 blur-[100px]" />
+            <div className="absolute inset-0 bg-[radial-gradient(500px_circle_at_50%_-10%,rgba(255,77,0,0.28),transparent_70%)]" />
+            <div className="absolute inset-0 bg-[radial-gradient(320px_circle_at_0%_110%,rgba(18,185,129,0.16),transparent_70%)]" />
+            <div className="absolute inset-0 bg-[radial-gradient(320px_circle_at_100%_110%,rgba(255,106,43,0.16),transparent_70%)]" />
           </div>
 
           <div className="relative mx-auto max-w-2xl">
