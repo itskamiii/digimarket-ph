@@ -1,6 +1,7 @@
 import { motion, useReducedMotion } from "framer-motion";
 import { ArrowRight, Play, Sparkles, Zap } from "lucide-react";
 import heroCamera from "../assets/27th-collection.jpg";
+import { getLiveUnitsCount, type ProductsState } from "../hooks/useProducts";
 import { EASE } from "./Reveal";
 
 const container = {
@@ -36,8 +37,9 @@ function SpinBadge() {
   );
 }
 
-export default function Hero() {
+export default function Hero({ products }: { products: ProductsState }) {
   const reduce = useReducedMotion();
+  const liveUnitsCount = getLiveUnitsCount(products);
 
   return (
     <section id="top" className="relative overflow-hidden pt-36 pb-16 sm:pt-40 lg:pt-44 lg:pb-24">
@@ -60,7 +62,7 @@ export default function Hero() {
           <motion.div variants={item} className="flex justify-center lg:justify-start">
             <span className="inline-flex items-center gap-2.5 rounded-full border border-ink-900/10 bg-cream-50/80 px-4 py-2 font-mono text-[11px] font-bold uppercase tracking-[0.2em] text-ink-700 shadow-sm backdrop-blur">
               <span className="h-2 w-2 rounded-full bg-flash-500 animate-pulse-dot" />
-              14 Units Live
+              {liveUnitsCount !== null ? `${liveUnitsCount} Units Live` : "Units Live"}
             </span>
           </motion.div>
 

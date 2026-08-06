@@ -29,7 +29,7 @@ function AppShell() {
       </a>
       <Navbar products={products} />
       <main>
-        <Hero />
+        <Hero products={products} />
         <SocialProof />
         <Features />
         <Showcase products={products} />

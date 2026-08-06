@@ -3,7 +3,7 @@ import { Menu, ShoppingBag, X } from "lucide-react";
 import { useEffect, useState } from "react";
 import logo from "../assets/logo.png";
 import { useCart } from "../context/CartContext";
-import type { ProductsState } from "../hooks/useProducts";
+import { getLiveUnitsCount, type ProductsState } from "../hooks/useProducts";
 import { NAV_LINKS } from "../lib/data";
 import { EASE } from "./Reveal";
 
@@ -11,13 +11,7 @@ export default function Navbar({ products }: { products: ProductsState }) {
   const [scrolled, setScrolled] = useState(false);
   const [open, setOpen] = useState(false);
   const { itemCount, openCart } = useCart();
-
-  // Total units still available across camcorders + digicams — updates as units sell.
-  const liveUnitsCount =
-    products.status === "ready"
-      ? products.data.camcorders.filter((c) => c.availability === "available").length +
-        products.data.digicams.filter((c) => c.availability === "available").length
-      : null;
+  const liveUnitsCount = getLiveUnitsCount(products);
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 24);
