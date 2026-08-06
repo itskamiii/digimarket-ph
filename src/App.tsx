@@ -1,6 +1,5 @@
 import { useState } from "react";
 import Benefits from "./components/Benefits";
-import Catalog from "./components/Catalog";
 import CartDrawer from "./components/CartDrawer";
 import Checkout from "./components/Checkout";
 import CTA from "./components/CTA";
@@ -34,7 +33,6 @@ function AppShell() {
         <SocialProof />
         <Features />
         <Showcase />
-        <Catalog />
         <Benefits />
         <Testimonials />
         <Pricing />

@@ -32,6 +32,7 @@ create table if not exists units (
   price_php integer not null,
   old_price_php integer,
   badge text,
+  best_for text,
   is_featured boolean not null default false,
   image_url text,
   tint text,
@@ -43,6 +44,9 @@ create table if not exists units (
 );
 create index if not exists units_status_idx on units(status);
 create index if not exists units_reserved_order_idx on units(reserved_order_id);
+-- Migration for databases created before best_for existed (fresh installs already get
+-- it from the CREATE TABLE above).
+alter table units add column if not exists best_for text;
 
 create table if not exists kits (
   id text primary key,

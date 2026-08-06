@@ -74,7 +74,7 @@ export default function SocialProof() {
 
       {/* Stats */}
       <div className="mx-auto max-w-7xl px-4 py-14 sm:px-6 lg:px-8 lg:py-20">
-        <dl className="grid grid-cols-2 gap-x-6 gap-y-10 lg:grid-cols-4">
+        <dl className="grid grid-cols-1 gap-x-6 gap-y-10 sm:grid-cols-3">
           {STATS.map((stat, i) => (
             <Reveal key={stat.label} delay={i * 0.08}>
               <div className="group relative flex flex-col text-center lg:text-left">
@@ -82,7 +82,7 @@ export default function SocialProof() {
                   {stat.label}
                 </dt>
                 <dd className="order-1 font-display text-4xl font-bold tracking-tight text-ink-900 transition-colors duration-300 group-hover:text-flash-500 sm:text-5xl">
-                  <CountUp value={stat.value} suffix={stat.suffix} decimals={stat.decimals ?? 0} />
+                  <CountUp value={stat.value} suffix={stat.suffix} />
                 </dd>
                 <span
                   aria-hidden="true"

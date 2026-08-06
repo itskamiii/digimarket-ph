@@ -8,6 +8,7 @@ function toCamera(unit: UnitRow) {
     price: unit.price_php,
     oldPrice: unit.old_price_php ?? undefined,
     badge: unit.badge ?? undefined,
+    bestFor: unit.best_for ?? undefined,
     availability: unit.status,
     image: unit.image_url ?? "",
     tint: unit.tint ?? "from-cream-200",

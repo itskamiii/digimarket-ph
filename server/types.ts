@@ -9,6 +9,7 @@ export type UnitRow = {
   price_php: number;
   old_price_php: number | null;
   badge: string | null;
+  best_for: string | null;
   is_featured: boolean;
   image_url: string | null;
   tint: string | null;

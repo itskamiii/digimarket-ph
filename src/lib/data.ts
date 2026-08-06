@@ -30,8 +30,7 @@ export const PRESS = [
 ];
 
 export const STATS = [
-  { value: 12000, suffix: "+", label: "cameras shipped nationwide" },
-  { value: 4.9, suffix: "★", label: "average from 2,400+ reviews", decimals: 1 },
+  { value: 200, suffix: "+", label: "cameras shipped nationwide" },
   { value: 40, suffix: "+", label: "cities across the PH delivered" },
   { value: 100, suffix: "%", label: "hand-restored & tested in Manila" },
 ];
@@ -47,6 +46,7 @@ export type Camera = {
   price: number;
   oldPrice?: number;
   badge?: string;
+  bestFor?: string;
   availability: Availability;
   image: string;
   tint: string;
@@ -76,14 +76,9 @@ export const FEATURES = [
     body: "The legendary point-and-shoot pop-up flash that turns any inuman, rooftop, or jeepney ride into a full photoshoot. Night mode, unlocked.",
   },
   {
-    icon: "usb",
-    title: "Post by 8:05 PM",
-    body: "Shot at 8:00, uploaded by 8:05. Every kit ships with an SD card and USB reader, so your OOTD is on the grid before the ice melts.",
-  },
-  {
     icon: "shield",
-    title: "6-month warranty",
-    body: "Shutter clicks are covered. If your unit acts up within six months, we repair or replace it — no drama, no runaround.",
+    title: "3 days with terms and conditions",
+    body: "Shutter clicks are covered. If your unit acts up within 3 days of delivery, we repair or replace it — terms and conditions apply.",
   },
   {
     icon: "sparkles",
