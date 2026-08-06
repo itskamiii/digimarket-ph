@@ -87,29 +87,6 @@ export const FEATURES = [
   },
 ];
 
-export const BENEFITS = [
-  {
-    num: "01",
-    title: "Your photos, not a preset",
-    body: "Everyone's feed looks the same because everyone uses the same filter. A digicam gives you a look that's yours — unmarked, unpolished, unmistakable.",
-  },
-  {
-    num: "02",
-    title: "Instant social currency",
-    body: "It's the camera your mutuals will ask about. Pull it out at a party and watch the group chat light up. You're not just taking photos — you're the vibe.",
-  },
-  {
-    num: "03",
-    title: "Pocket-size, always with you",
-    body: "No bag needed. These slip into your pocket and come out when the moment's right — birthdays, sessions, random Tuesdays that deserve remembering.",
-  },
-  {
-    num: "04",
-    title: "A kinder kind of screen time",
-    body: "One button, no notifications, no doomscrolling. Just you, your friends, and a tiny camera that makes every moment feel like a memory already.",
-  },
-];
-
 export const TESTIMONIALS = [
   {
     quote:
