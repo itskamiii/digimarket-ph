@@ -119,7 +119,7 @@ export async function POST(request: Request) {
     // inventory-constrained (the owner picks a physical camera to fulfil it later).
     const unitIds = unitItems.map((i) => i.id);
     if (unitIds.length > 0) {
-      const { missingIds } = await reserveUnits(unitIds, order.id);
+      const { missingIds } = await reserveUnits(unitIds, order.id, { indefinite: body.fulfillmentMethod === "cod" });
       if (missingIds.length > 0) {
         await rollbackOrder(order.id);
         return Response.json({ error: "unavailable", unavailableItems: missingIds }, { status: 409 });

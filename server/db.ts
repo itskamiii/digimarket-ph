@@ -39,11 +39,15 @@ export async function getKitsByIds(ids: string[]): Promise<KitRow[]> {
 
 export async function reserveUnits(
   unitIds: string[],
-  orderId: string
+  orderId: string,
+  options: { indefinite?: boolean } = {}
 ): Promise<{ reservedIds: string[]; missingIds: string[] }> {
   if (unitIds.length === 0) return { reservedIds: [], missingIds: [] };
 
-  const ttlMinutes = Number(process.env.RESERVATION_TTL_MINUTES ?? 15);
+  // COD orders are already a committed sale (payment happens on delivery, not via a
+  // gateway we get a confirmation webhook from), so they hold the unit indefinitely
+  // rather than on the same abandonment-timeout clock as an unpaid online checkout.
+  const ttlMinutes = options.indefinite ? null : Number(process.env.RESERVATION_TTL_MINUTES ?? 15);
   const { data, error } = await getSupabase().rpc("reserve_units", {
     unit_ids: unitIds,
     p_order_id: orderId,

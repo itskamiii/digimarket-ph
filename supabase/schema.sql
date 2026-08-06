@@ -77,13 +77,16 @@ alter table order_items enable row level security;
 -- or reserved-but-expired (so a stale reservation never blocks a second buyer even in
 -- the up-to-a-minute window before the cron job below sweeps it). Returns the ids that
 -- were actually claimed — the caller compares this against what it asked for.
+-- ttl_minutes = NULL means an indefinite hold (used for COD orders, which are already
+-- a committed sale with no payment-gateway confirmation step to time out on — same
+-- mechanism as an owner-set manual hold in the Table Editor).
 create or replace function reserve_units(unit_ids text[], p_order_id uuid, ttl_minutes integer default 15)
 returns table(id text)
 language sql
 as $$
   update units
   set status = 'reserved',
-      reservation_expires_at = now() + make_interval(mins => ttl_minutes),
+      reservation_expires_at = case when ttl_minutes is null then null else now() + make_interval(mins => ttl_minutes) end,
       reserved_order_id = p_order_id,
       updated_at = now()
   where units.id = any(unit_ids)
