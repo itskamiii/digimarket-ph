@@ -74,24 +74,26 @@ export default function SocialProof() {
 
       {/* Stats */}
       <div className="mx-auto max-w-7xl px-4 py-14 sm:px-6 lg:px-8 lg:py-20">
-        <dl className="grid grid-cols-1 gap-x-6 gap-y-10 sm:grid-cols-3">
-          {STATS.map((stat, i) => (
-            <Reveal key={stat.label} delay={i * 0.08}>
-              <div className="group relative flex flex-col text-center">
-                <dt className="order-2 mt-2 text-xs font-medium leading-relaxed text-ink-400 sm:text-sm">
-                  {stat.label}
-                </dt>
-                <dd className="order-1 font-display text-4xl font-bold tracking-tight text-ink-900 transition-colors duration-300 group-hover:text-flash-500 sm:text-5xl">
-                  <CountUp value={stat.value} suffix={stat.suffix} />
-                </dd>
-                <span
-                  aria-hidden="true"
-                  className="mx-auto mt-4 block h-px w-10 bg-ink-900/15 transition-all duration-500 group-hover:w-16 group-hover:bg-flash-500"
-                />
-              </div>
-            </Reveal>
-          ))}
-        </dl>
+        <div className="grain relative overflow-hidden rounded-[2rem] bg-ink-900 px-6 py-12 sm:px-10 lg:py-16">
+          <dl className="relative grid grid-cols-1 gap-x-6 gap-y-10 sm:grid-cols-3">
+            {STATS.map((stat, i) => (
+              <Reveal key={stat.label} delay={i * 0.08}>
+                <div className="group relative flex flex-col text-center">
+                  <dt className="order-2 mt-2 text-xs font-medium leading-relaxed text-cream-100/55 sm:text-sm">
+                    {stat.label}
+                  </dt>
+                  <dd className="order-1 font-display text-4xl font-bold tracking-tight text-cream-50 transition-colors duration-300 group-hover:text-flash-400 sm:text-5xl">
+                    <CountUp value={stat.value} suffix={stat.suffix} />
+                  </dd>
+                  <span
+                    aria-hidden="true"
+                    className="mx-auto mt-4 block h-px w-10 bg-cream-50/15 transition-all duration-500 group-hover:w-16 group-hover:bg-flash-500"
+                  />
+                </div>
+              </Reveal>
+            ))}
+          </dl>
+        </div>
       </div>
     </section>
   );

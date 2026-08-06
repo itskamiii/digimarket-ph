@@ -131,9 +131,9 @@ export default function Showcase({ products }: { products: ProductsState }) {
             </Reveal>
             <Reveal delay={0.08}>
               <h2 className="mt-5 font-display text-3xl font-bold tracking-tight text-ink-900 sm:text-5xl">
-                This week's picks.
+                Each camera's one of a kind.
                 <br />
-                <span className="text-flash-500">Full catalog below.</span>
+                <span className="text-flash-500">When it's gone, it's gone.</span>
               </h2>
             </Reveal>
           </div>

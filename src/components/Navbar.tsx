@@ -38,9 +38,6 @@ export default function Navbar({ products }: { products: ProductsState }) {
       <div className="bg-ink-900 text-cream-100">
         <p className="mx-auto flex max-w-7xl items-center justify-center gap-2 px-4 py-2 text-center font-mono text-[10px] font-bold uppercase tracking-[0.2em] sm:text-[11px]">
           <span>⚡ New drop live{liveUnitsCount !== null ? ` — ${liveUnitsCount} units only` : ""}</span>
-          <span className="text-flash-400">·</span>
-          <span className="hidden md:inline">Free shipping on Y2K Starter &amp; up</span>
-          <span className="md:hidden">Free shipping ₱4,990+</span>
         </p>
       </div>
 
