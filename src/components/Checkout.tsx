@@ -1,10 +1,15 @@
 import { AnimatePresence, motion } from "framer-motion";
 import { AlertCircle, Loader2, ShoppingBag, X } from "lucide-react";
-import { useState, type FormEvent } from "react";
+import { useMemo, useState, type FormEvent } from "react";
 import { useCart } from "../context/CartContext";
 import { CheckoutUnavailableError, createCheckout } from "../lib/api";
 import { formatPeso } from "../lib/format";
+import phAddresses from "../lib/ph-addresses.json";
 import { EASE } from "./Reveal";
+
+type PhAddress = { province: string; city: string; zip: string };
+const PH_ADDRESSES = phAddresses as PhAddress[];
+const PROVINCES = [...new Set(PH_ADDRESSES.map((a) => a.province))].sort();
 
 const ERROR_MESSAGES: Record<string, string> = {
   invalid_customer: "Please fill in your name, email, and phone number.",
@@ -29,6 +34,31 @@ export default function Checkout({ open, onClose }: { open: boolean; onClose: ()
   const [province, setProvince] = useState("");
   const [postalCode, setPostalCode] = useState("");
   const [fulfillmentMethod, setFulfillmentMethod] = useState<"online" | "cod">("online");
+
+  // City options narrow to the chosen province once one's picked; searching city first
+  // (before province) still works against the full list, and picking a city fills in
+  // its province + a starting postal code — left editable since one dataset zip can't
+  // always be exactly right down to the barangay (Metro Manila especially).
+  const cityOptions = useMemo(
+    () => (province ? PH_ADDRESSES.filter((a) => a.province === province) : PH_ADDRESSES).map((a) => a.city),
+    [province]
+  );
+
+  const selectProvince = (nextProvince: string) => {
+    setProvince(nextProvince);
+    if (!PH_ADDRESSES.some((a) => a.province === nextProvince && a.city === city)) {
+      setCity("");
+    }
+  };
+
+  const selectCity = (nextCity: string) => {
+    setCity(nextCity);
+    const match = PH_ADDRESSES.find((a) => a.city === nextCity && (!province || a.province === province));
+    if (match) {
+      setProvince(match.province);
+      setPostalCode(match.zip);
+    }
+  };
 
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -158,16 +188,73 @@ export default function Checkout({ open, onClose }: { open: boolean; onClose: ()
                     </div>
 
                     <div className="grid gap-3 sm:grid-cols-2">
-                      <Field label="Full name" value={name} onChange={setName} autoComplete="name" required />
-                      <Field label="Phone" value={phone} onChange={setPhone} type="tel" autoComplete="tel" required />
+                      <Field
+                        label="Full name"
+                        value={name}
+                        onChange={setName}
+                        autoComplete="name"
+                        placeholder="Juan Dela Cruz"
+                        required
+                      />
+                      <Field
+                        label="Phone"
+                        value={phone}
+                        onChange={setPhone}
+                        type="tel"
+                        autoComplete="tel"
+                        placeholder="09171234567"
+                        required
+                      />
                     </div>
-                    <Field label="Email" value={email} onChange={setEmail} type="email" autoComplete="email" required />
-                    <Field label="Address line 1" value={line1} onChange={setLine1} autoComplete="address-line1" required />
-                    <Field label="Address line 2 (optional)" value={line2} onChange={setLine2} autoComplete="address-line2" />
+                    <Field
+                      label="Email"
+                      value={email}
+                      onChange={setEmail}
+                      type="email"
+                      autoComplete="email"
+                      placeholder="juan@gmail.com"
+                      required
+                    />
+                    <Field
+                      label="Address line 1"
+                      value={line1}
+                      onChange={setLine1}
+                      autoComplete="address-line1"
+                      placeholder="123 Sampaguita St., Brgy. San Isidro"
+                      required
+                    />
+                    <Field
+                      label="Address line 2 (optional)"
+                      value={line2}
+                      onChange={setLine2}
+                      autoComplete="address-line2"
+                      placeholder="Unit / floor, landmark, etc."
+                    />
                     <div className="grid gap-3 sm:grid-cols-3">
-                      <Field label="City" value={city} onChange={setCity} autoComplete="address-level2" required />
-                      <Field label="Province" value={province} onChange={setProvince} autoComplete="address-level1" required />
-                      <Field label="Postal code" value={postalCode} onChange={setPostalCode} autoComplete="postal-code" required />
+                      <Combobox
+                        label="Province"
+                        value={province}
+                        onSelect={selectProvince}
+                        options={PROVINCES}
+                        placeholder="Search province…"
+                        required
+                      />
+                      <Combobox
+                        label="City / Municipality"
+                        value={city}
+                        onSelect={selectCity}
+                        options={cityOptions}
+                        placeholder="Search city…"
+                        required
+                      />
+                      <Field
+                        label="Postal code"
+                        value={postalCode}
+                        onChange={setPostalCode}
+                        autoComplete="postal-code"
+                        placeholder="1000"
+                        required
+                      />
                     </div>
 
                     <div>
@@ -216,12 +303,22 @@ export default function Checkout({ open, onClose }: { open: boolean; onClose: ()
   );
 }
 
+function RequiredMark() {
+  return (
+    <span className="text-flash-500" aria-hidden="true">
+      {" "}
+      *
+    </span>
+  );
+}
+
 function Field({
   label,
   value,
   onChange,
   type = "text",
   autoComplete,
+  placeholder,
   required,
 }: {
   label: string;
@@ -229,20 +326,98 @@ function Field({
   onChange: (value: string) => void;
   type?: string;
   autoComplete?: string;
+  placeholder?: string;
   required?: boolean;
 }) {
   return (
     <label className="flex flex-col gap-1.5 text-sm">
-      <span className="text-xs font-medium text-ink-500">{label}</span>
+      <span className="text-xs font-medium text-ink-500">
+        {label}
+        {required && <RequiredMark />}
+      </span>
       <input
         type={type}
         value={value}
         onChange={(e) => onChange(e.target.value)}
         autoComplete={autoComplete}
+        placeholder={placeholder}
         required={required}
-        className="rounded-xl border border-ink-900/10 bg-cream-50 px-4 py-2.5 text-sm text-ink-900 transition-colors focus:border-flash-500/60 focus:outline-none"
+        className="rounded-xl border border-ink-900/10 bg-cream-50 px-4 py-2.5 text-sm text-ink-900 placeholder:text-ink-400/50 transition-colors focus:border-flash-500/60 focus:outline-none"
       />
     </label>
+  );
+}
+
+// Searchable select: free-text filters the option list, but the value only "sticks"
+// via onSelect (picking an option) — this keeps City/Province constrained to the real
+// PH address dataset instead of accepting arbitrary typed text.
+function Combobox({
+  label,
+  value,
+  onSelect,
+  options,
+  placeholder,
+  required,
+}: {
+  label: string;
+  value: string;
+  onSelect: (value: string) => void;
+  options: string[];
+  placeholder?: string;
+  required?: boolean;
+}) {
+  const [query, setQuery] = useState("");
+  const [open, setOpen] = useState(false);
+
+  const filtered = useMemo(() => {
+    const q = query.trim().toLowerCase();
+    const base = q ? options.filter((o) => o.toLowerCase().includes(q)) : options;
+    return base.slice(0, 50);
+  }, [query, options]);
+
+  return (
+    <div className="relative flex flex-col gap-1.5 text-sm">
+      <span className="text-xs font-medium text-ink-500">
+        {label}
+        {required && <RequiredMark />}
+      </span>
+      <input
+        type="text"
+        value={open ? query : value}
+        onChange={(e) => {
+          setQuery(e.target.value);
+          setOpen(true);
+        }}
+        onFocus={() => {
+          setQuery("");
+          setOpen(true);
+        }}
+        onBlur={() => window.setTimeout(() => setOpen(false), 120)}
+        placeholder={placeholder}
+        autoComplete="off"
+        required={required}
+        className="rounded-xl border border-ink-900/10 bg-cream-50 px-4 py-2.5 text-sm text-ink-900 placeholder:text-ink-400/50 transition-colors focus:border-flash-500/60 focus:outline-none"
+      />
+      {open && filtered.length > 0 && (
+        <ul className="absolute inset-x-0 top-full z-20 mt-1 max-h-52 overflow-y-auto rounded-xl border border-ink-900/10 bg-cream-50 py-1 shadow-lg shadow-ink-900/10">
+          {filtered.map((opt) => (
+            <li key={opt}>
+              <button
+                type="button"
+                onMouseDown={() => {
+                  onSelect(opt);
+                  setQuery("");
+                  setOpen(false);
+                }}
+                className="block w-full px-4 py-2 text-left text-sm text-ink-700 hover:bg-flash-500/10 hover:text-ink-900"
+              >
+                {opt}
+              </button>
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
   );
 }
 

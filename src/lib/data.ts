@@ -239,7 +239,7 @@ export const FAQS = [
   },
   {
     q: "How fast is shipping?",
-    a: "Depends on the courier. Lalamove: same-day, Metro Manila only. LBC: NCR in 1 day, Luzon in 1–2 days, Visayas in 2–5 days, Mindanao in 3–6 days, remote islands in 3–7 days. Every order ships with tracking.",
+    a: "Depends on the courier. Lalamove: same-day, NCR only. LBC: NCR in 1 day, Luzon in 1–2 days, Visayas in 2–5 days, Mindanao in 3–6 days, remote islands in 3–7 days. Every order ships with tracking.",
   },
   {
     q: "Can I return or exchange a unit?",
@@ -255,19 +255,18 @@ export const FAQS = [
   },
   {
     q: "What payment methods do you accept?",
-    a: "Through the website: QR (QRPh, scannable from GCash, Maya, or your banking app) via secure checkout, or Cash on Delivery — shipped via LBC, available anywhere in the Philippines. Prefer to arrange things over DM instead? Lalamove is Metro Manila only and fund-transfer before delivery (no COD on Lalamove), meet ups accept cash or fund transfer plus a meet-up fee, and pick ups accept cash or fund transfer with no extra fee.",
+    a: "Through the website: QR (QRPh, scannable from GCash, Maya, or your banking app) via secure checkout, or Cash on Delivery — shipped via LBC, available anywhere in the Philippines. Want it via Lalamove (NCR only)? Message us and we'll book it for you — payment is fund transfer before delivery, no COD on Lalamove. Meet ups and pick ups are also available: cash or fund transfer, plus a meet-up fee for meet ups (none for pick ups).",
   },
   {
     q: "How do I actually place an order?",
-    a: "Browse the catalog, tap a camera's name to see its full details, then hit “Add to bag.” When you're ready, open your bag and check out — fill in your shipping details, then pay online via QR or choose Cash on Delivery (shipped via LBC, anywhere in the Philippines). Prefer a meet up, pick up, or Lalamove arrangement instead? DM us on Instagram and we'll sort it out directly.",
+    a: "Browse the catalog, tap a camera's name to see its full details, then hit “Add to bag.” When you're ready, open your bag and check out — fill in your shipping details, then pay online via QR or choose Cash on Delivery (shipped via LBC, anywhere in the Philippines). Want Lalamove (NCR only), a meet up, or a pick up instead? Message us on Instagram and we'll help book it.",
   },
 ];
 
 export const FOOTER_LINKS = {
   Shop: [
     { label: "The Drop", href: "#drop" },
-    { label: "Accessories", href: "#drop" },
-    { label: "Gift Cards", href: "#cta" },
+    { label: "Full Catalog", href: "#catalog" },
   ],
   Company: [
     { label: "Our Story", href: "#why" },
