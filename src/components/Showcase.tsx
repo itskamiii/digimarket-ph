@@ -54,7 +54,7 @@ export default function Showcase({ products }: { products: ProductsState }) {
             </div>
             <p className="flex items-center gap-2 text-xs text-ink-400">
               <CreditCard className="h-3.5 w-3.5" />
-              Full disclosure + video proof before every unit ships
+              Full disclosure + video proof before we ship the unit
             </p>
           </div>
         </Reveal>

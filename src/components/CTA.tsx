@@ -64,11 +64,6 @@ export default function CTA() {
               </span>
             </h2>
 
-            <p className="mx-auto mt-5 max-w-xl text-base leading-relaxed text-cream-100/60 sm:text-lg">
-              Drops sell out in hours — the last one was gone in 47 minutes. Join 40,000+ waiting
-              and be first in line for the next batch.
-            </p>
-
             {/* Email capture */}
             <div className="mx-auto mt-9 max-w-lg">
               <AnimatePresence mode="wait">
@@ -102,7 +97,7 @@ export default function CTA() {
                       required
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
-                      placeholder="yourname@era2004.ph"
+                      placeholder="yourname@gmail.com"
                       className="w-full flex-1 rounded-full border border-cream-50/15 bg-cream-50/8 px-6 py-4 text-sm text-cream-50 placeholder:text-cream-100/35 backdrop-blur transition-colors duration-300 focus:border-flash-400/60 focus:outline-none"
                     />
                     <button
@@ -124,7 +119,7 @@ export default function CTA() {
                 </p>
               )}
               <p className="mt-4 font-mono text-[10px] font-bold uppercase tracking-[0.2em] text-cream-100/35">
-                No spam. Just drops. Unsubscribe anytime.
+                No Spam. Just Drops.
               </p>
             </div>
           </div>

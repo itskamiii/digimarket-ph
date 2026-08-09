@@ -14,7 +14,7 @@ const InstagramIcon = ({ className }: IconProps) => (
 // Instagram is the only real platform the business uses — no Facebook or TikTok.
 const SOCIALS = [{ label: "Instagram", icon: InstagramIcon, href: "https://instagram.com/digimarket_ph" }];
 
-const PAYMENTS = ["GCash", "Maya", "Visa", "MC", "COD"];
+const PAYMENTS = ["QRPh", "COD"];
 
 export default function Footer() {
   return (
