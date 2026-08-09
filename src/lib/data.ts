@@ -66,6 +66,20 @@ export const CUSTOMER_TAGS = [
   { handle: "@zysarrizada", image: "https://bfwaehbdyxtdfjdmgxor.supabase.co/storage/v1/object/public/unit-photos/customer-tags/zysarrizada.jpg" },
 ];
 
+// Real customer DM screenshots (cropped by the owner before sending) — genuine reviews,
+// not written copy. Filename is the customer's IG handle.
+export const CUSTOMER_REVIEWS = [
+  { handle: "@aaartrose", image: "https://bfwaehbdyxtdfjdmgxor.supabase.co/storage/v1/object/public/unit-photos/reviews/aaartrose.jpg" },
+  { handle: "@annexdreya", image: "https://bfwaehbdyxtdfjdmgxor.supabase.co/storage/v1/object/public/unit-photos/reviews/annexdreya.jpg" },
+  { handle: "@gelytagle", image: "https://bfwaehbdyxtdfjdmgxor.supabase.co/storage/v1/object/public/unit-photos/reviews/gelytagle.jpg" },
+  { handle: "@gwyneyy", image: "https://bfwaehbdyxtdfjdmgxor.supabase.co/storage/v1/object/public/unit-photos/reviews/gwyneyy.jpg" },
+  { handle: "@hojixchas", image: "https://bfwaehbdyxtdfjdmgxor.supabase.co/storage/v1/object/public/unit-photos/reviews/hojixchas.jpg" },
+  { handle: "@mara.ielle", image: "https://bfwaehbdyxtdfjdmgxor.supabase.co/storage/v1/object/public/unit-photos/reviews/mara.ielle.jpg" },
+  { handle: "@mrdxyz", image: "https://bfwaehbdyxtdfjdmgxor.supabase.co/storage/v1/object/public/unit-photos/reviews/mrdxyz.jpg" },
+  { handle: "@rhessiaa", image: "https://bfwaehbdyxtdfjdmgxor.supabase.co/storage/v1/object/public/unit-photos/reviews/rhessiaa.jpg" },
+  { handle: "@sapphire_elain1990", image: "https://bfwaehbdyxtdfjdmgxor.supabase.co/storage/v1/object/public/unit-photos/reviews/sapphire_elain1990.jpg" },
+];
+
 export const STATS = [
   { value: 200, suffix: "+", label: "cameras shipped nationwide" },
   { value: 40, suffix: "+", label: "cities across the PH delivered" },
@@ -110,58 +124,6 @@ export const FEATURES = [
     icon: "sparkles",
     title: "Rare finds, fair prices",
     body: "Curated drops of Canon, Sony, Fujifilm, and Olympus — hunted from ukay-ukays and Japan surplus to garage sales, priced for students.",
-  },
-];
-
-export const TESTIMONIALS = [
-  {
-    quote:
-      "Brought it to a rooftop session and the flash photos came out SO soft and dreamy. My friends thought I edited them. I literally just pressed the button.",
-    name: "Mika R.",
-    meta: "21 · Manila",
-    initials: "MR",
-    gradient: "from-flash-500 to-flash-300",
-    featured: true,
-  },
-  {
-    quote:
-      "Ordered on a Monday, camera was in QC by Tuesday. Unit looks brand new — the seller even included a handwritten note. 10/10, no notes.",
-    name: "Kiko S.",
-    meta: "22 · Quezon City",
-    initials: "KS",
-    gradient: "from-ink-800 to-ink-500",
-  },
-  {
-    quote:
-      "The CCD grain is EVERYTHING. I've stopped using my iPhone for nights out. My feed has never looked this good and I've never posted this much.",
-    name: "Bea L.",
-    meta: "23 · Cebu",
-    initials: "BL",
-    gradient: "from-lcd-500 to-lcd-400",
-  },
-  {
-    quote:
-      "As someone na laging nahuhuli sa trends, this one I got early. The Starter kit's zine taught me more about flash photography than 4 years of art school.",
-    name: "Paolo D.",
-    meta: "24 · Baguio",
-    initials: "PD",
-    gradient: "from-flash-300 to-flash-100",
-  },
-  {
-    quote:
-      "Was skeptical about buying a 20-year-old camera online, but they sent a video proving it worked before it even shipped. 3 months in, zero issues. Best 4,990 I've spent.",
-    name: "Sam T.",
-    meta: "22 · Makati",
-    initials: "ST",
-    gradient: "from-ink-700 to-ink-900",
-  },
-  {
-    quote:
-      "Got the Creator's Kit with my best friend so we could twin at festivals. Two cameras, one era, unlimited core memories. Sulit na sulit!",
-    name: "Gela M.",
-    meta: "20 · Davao",
-    initials: "GM",
-    gradient: "from-flash-500 to-lcd-400",
   },
 ];
 

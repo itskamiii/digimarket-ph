@@ -1,6 +1,5 @@
-import { Star } from "lucide-react";
-import { CUSTOMER_TAGS, TESTIMONIALS } from "../lib/data";
-import { Eyebrow, Reveal, Stagger, StaggerItem } from "./Reveal";
+import { CUSTOMER_REVIEWS, CUSTOMER_TAGS } from "../lib/data";
+import { Eyebrow, Reveal } from "./Reveal";
 
 function CustomerTagsMarquee() {
   return (
@@ -34,16 +33,6 @@ function CustomerTagsMarquee() {
   );
 }
 
-function Stars() {
-  return (
-    <div className="flex gap-1" aria-label="5 out of 5 stars">
-      {Array.from({ length: 5 }).map((_, i) => (
-        <Star key={i} className="h-3.5 w-3.5 fill-flash-500 text-flash-500" />
-      ))}
-    </div>
-  );
-}
-
 export default function Testimonials() {
   return (
     <section id="reviews" className="relative overflow-hidden py-20 lg:py-28">
@@ -67,80 +56,28 @@ export default function Testimonials() {
 
         <CustomerTagsMarquee />
 
-        <Stagger className="mt-14 grid gap-5 sm:grid-cols-2 lg:grid-cols-3" amount={0.1}>
-          {TESTIMONIALS.map((t, i) => {
-            const isWide = i === TESTIMONIALS.length - 1;
-            return (
-            <StaggerItem
-              key={t.name}
-              className={
-                t.featured
-                  ? "sm:col-span-2 lg:col-span-1 lg:row-span-2"
-                  : isWide
-                    ? "sm:col-span-2 lg:col-span-3"
-                    : ""
-              }
-            >
-              <figure
-                className={`group relative flex h-full flex-col justify-between overflow-hidden rounded-3xl border border-ink-900/8 bg-cream-50 p-7 shadow-[0_2px_20px_-8px_rgba(27,23,18,0.12)] transition-all duration-500 hover:-translate-y-1.5 hover:shadow-[0_26px_55px_-22px_rgba(27,23,18,0.28)] ${
-                  t.featured
-                    ? "bg-ink-900 text-cream-100 sm:p-9"
-                    : isWide
-                      ? "lg:flex-row lg:items-center lg:gap-10 lg:p-9"
-                      : ""
-                }`}
-              >
-                <div className={isWide ? "lg:flex-1" : ""}>
-                  {t.featured && (
-                    <span className="mb-5 inline-block rounded-full bg-flash-500/15 px-3.5 py-1.5 font-mono text-[10px] font-bold uppercase tracking-[0.2em] text-flash-400">
-                      ★ Featured review
-                    </span>
-                  )}
-                  <Stars />
-                  <blockquote
-                    className={`mt-4 leading-relaxed ${
-                      t.featured
-                        ? "font-display text-xl font-medium tracking-tight sm:text-2xl"
-                        : isWide
-                          ? "text-base text-ink-600 sm:text-lg"
-                          : "text-sm text-ink-600"
-                    }`}
-                  >
-                    “{t.quote}”
-                  </blockquote>
-                </div>
-                <figcaption className="mt-7 flex items-center gap-3.5 lg:mt-0 lg:shrink-0">
-                  <span
-                    className={`flex h-11 w-11 items-center justify-center rounded-full bg-gradient-to-br ${t.gradient} font-display text-sm font-bold text-cream-50 shadow-lg ring-2 ring-cream-50/20 transition-transform duration-500 group-hover:scale-110`}
-                    aria-hidden="true"
-                  >
-                    {t.initials}
+        <div className="mt-14 columns-1 gap-5 sm:columns-2 lg:columns-3">
+          {CUSTOMER_REVIEWS.map((r, i) => (
+            <Reveal key={r.handle + i} delay={Math.min(i, 6) * 0.06} className="mb-5 break-inside-avoid">
+              <figure className="group overflow-hidden rounded-3xl bg-ink-950 shadow-[0_2px_20px_-8px_rgba(27,23,18,0.12)] transition-all duration-500 hover:-translate-y-1.5 hover:shadow-[0_26px_55px_-22px_rgba(27,23,18,0.28)]">
+                <img
+                  src={r.image}
+                  alt={`DM screenshot from ${r.handle}`}
+                  loading="lazy"
+                  className="w-full"
+                />
+                <figcaption className="flex items-center justify-between px-5 py-3.5">
+                  <span className="font-mono text-[10px] font-bold uppercase tracking-[0.16em] text-cream-100/50">
+                    {r.handle}
                   </span>
-                  <div>
-                    <p className={`font-semibold ${t.featured ? "text-cream-50" : "text-ink-900"}`}>
-                      {t.name}
-                    </p>
-                    <p
-                      className={`font-mono text-[10px] font-bold uppercase tracking-[0.18em] ${
-                        t.featured ? "text-cream-100/50" : "text-ink-400"
-                      }`}
-                    >
-                      {t.meta}
-                    </p>
-                  </div>
-                  <span
-                    className={`ml-auto font-mono text-[9px] font-bold uppercase tracking-[0.2em] ${
-                      t.featured ? "text-lcd-400" : "text-lcd-500"
-                    }`}
-                  >
+                  <span className="font-mono text-[9px] font-bold uppercase tracking-[0.2em] text-lcd-400">
                     ✓ verified
                   </span>
                 </figcaption>
               </figure>
-            </StaggerItem>
-            );
-          })}
-        </Stagger>
+            </Reveal>
+          ))}
+        </div>
       </div>
     </section>
   );
