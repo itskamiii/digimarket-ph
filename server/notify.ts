@@ -78,3 +78,21 @@ export async function notifyPaymentOnDeadOrder(params: {
     "dead-order payment alert"
   );
 }
+
+// Payment succeeded but the automatic Lalamove booking call failed (API down, sandbox
+// misconfigured, etc.) — the order is genuinely paid, so this always needs a human to
+// book the delivery manually rather than leaving the customer's camera unshipped.
+export async function notifyLalamoveBookingFailed(params: {
+  orderId: string;
+  errorMessage: string;
+}): Promise<void> {
+  await sendToFormspree(
+    {
+      _subject: `⚠️ Action needed — Lalamove booking failed for a paid order`,
+      orderId: params.orderId,
+      error: params.errorMessage,
+      note: "Payment already succeeded for this order, but booking the Lalamove delivery failed automatically. Book it manually via the Lalamove app/website using this order's shipping address.",
+    },
+    "lalamove-booking-failed alert"
+  );
+}

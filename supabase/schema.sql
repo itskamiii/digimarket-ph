@@ -14,7 +14,10 @@ create table if not exists orders (
   status text not null default 'pending_payment'
     check (status in ('pending_payment', 'paid', 'cod_pending', 'fulfilled', 'cancelled', 'expired')),
   subtotal_php integer not null,
-  shipping_fee_php integer not null default 0, -- reference only; collected COD by the courier, not charged online
+  -- LBC: reference only, collected COD by the courier, never charged online. Lalamove:
+  -- a real charge, folded into total_php and paid through PayMongo up front (Lalamove
+  -- itself is prepay-only, no COD).
+  shipping_fee_php integer not null default 0,
   total_php integer not null,
   paymongo_checkout_session_id text,
   paymongo_payment_intent_id text,
@@ -22,6 +25,15 @@ create table if not exists orders (
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
 );
+
+-- Migration for databases created before shipping_method/Lalamove columns existed.
+alter table orders add column if not exists shipping_method text not null default 'lbc'
+  check (shipping_method in ('lbc', 'lalamove', 'dhl'));
+alter table orders add column if not exists dropoff_lat double precision;
+alter table orders add column if not exists dropoff_lng double precision;
+alter table orders add column if not exists lalamove_order_id text;
+alter table orders add column if not exists lalamove_share_link text;
+alter table orders add column if not exists lalamove_status text;
 
 create table if not exists units (
   id text primary key,

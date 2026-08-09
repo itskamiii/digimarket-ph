@@ -1,5 +1,5 @@
 import { getSupabase } from "./supabase.js";
-import type { KitRow, OrderItemRow, OrderRow, OrderStatusValue, ShippingAddress, UnitRow } from "./types.js";
+import type { KitRow, OrderItemRow, OrderRow, OrderStatusValue, ShippingAddress, ShippingMethod, UnitRow } from "./types.js";
 
 export async function getProducts(): Promise<{ units: UnitRow[]; kits: KitRow[] }> {
   const supabase = getSupabase();
@@ -85,6 +85,10 @@ export type NewOrderInput = {
   fulfillmentMethod: "online" | "cod";
   subtotalPhp: number;
   status: OrderStatusValue;
+  shippingMethod: ShippingMethod;
+  shippingFeePhp: number;
+  dropoffLat?: number | null;
+  dropoffLng?: number | null;
 };
 
 export async function insertOrder(order: NewOrderInput): Promise<OrderRow> {
@@ -97,9 +101,12 @@ export async function insertOrder(order: NewOrderInput): Promise<OrderRow> {
       shipping_address: order.shippingAddress,
       fulfillment_method: order.fulfillmentMethod,
       subtotal_php: order.subtotalPhp,
-      shipping_fee_php: 0,
-      total_php: order.subtotalPhp,
+      shipping_fee_php: order.shippingFeePhp,
+      total_php: order.subtotalPhp + order.shippingFeePhp,
       status: order.status,
+      shipping_method: order.shippingMethod,
+      dropoff_lat: order.dropoffLat ?? null,
+      dropoff_lng: order.dropoffLng ?? null,
     })
     .select()
     .single();
@@ -173,6 +180,16 @@ export async function getOrderByCheckoutSessionId(sessionId: string): Promise<Or
   return data as OrderRow | null;
 }
 
+export async function getOrderByLalamoveOrderId(lalamoveOrderId: string): Promise<OrderRow | null> {
+  const { data, error } = await getSupabase()
+    .from("orders")
+    .select("*")
+    .eq("lalamove_order_id", lalamoveOrderId)
+    .maybeSingle();
+  if (error) throw error;
+  return data as OrderRow | null;
+}
+
 // Used when a customer explicitly cancels out of PayMongo's checkout page — guarded so
 // a race with the webhook can never downgrade an order that's actually already paid.
 export async function markOrderCancelled(orderId: string): Promise<void> {
@@ -198,4 +215,27 @@ export async function markOrderPaid(orderId: string, paymentMethod: string | nul
     .select("id");
   if (error) throw error;
   return (data ?? []).length > 0;
+}
+
+// Called once the PayMongo webhook confirms payment on a shipping_method='lalamove'
+// order and the actual Lalamove booking succeeds.
+export async function attachLalamoveOrder(
+  orderId: string,
+  lalamoveOrderId: string,
+  shareLink: string | null,
+  status: string
+): Promise<void> {
+  const { error } = await getSupabase()
+    .from("orders")
+    .update({ lalamove_order_id: lalamoveOrderId, lalamove_share_link: shareLink, lalamove_status: status })
+    .eq("id", orderId);
+  if (error) throw error;
+}
+
+// Called from the Lalamove status webhook as the delivery progresses (driver assigned,
+// picked up, completed, etc.) — a lighter-weight update than attachLalamoveOrder, which
+// only ever runs once at booking time.
+export async function updateLalamoveStatus(orderId: string, status: string): Promise<void> {
+  const { error } = await getSupabase().from("orders").update({ lalamove_status: status }).eq("id", orderId);
+  if (error) throw error;
 }

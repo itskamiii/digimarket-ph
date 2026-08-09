@@ -48,6 +48,21 @@ export async function createCheckout(body: CheckoutRequestBody): Promise<Checkou
   return { orderId: json.orderId, redirect: json.redirect ?? null };
 }
 
+export type LalamoveQuoteResult = { feePhp: number; expiresAt: string };
+
+export async function fetchLalamoveQuote(dropoffPin: { lat: number; lng: number }, address: string): Promise<LalamoveQuoteResult> {
+  const res = await fetch("/api/checkout/lalamove-quote", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ dropoffPin, address }),
+  });
+  const json = (await res.json().catch(() => ({}))) as { error?: string } & Partial<LalamoveQuoteResult>;
+  if (!res.ok || json.feePhp === undefined) {
+    throw new Error(json.error ?? "Couldn't get a Lalamove quote — please try again.");
+  }
+  return { feePhp: json.feePhp, expiresAt: json.expiresAt ?? "" };
+}
+
 export type OrderStatusResult = {
   status: "pending_payment" | "paid" | "cod_pending" | "fulfilled" | "cancelled" | "expired";
   fulfillmentMethod: "online" | "cod";

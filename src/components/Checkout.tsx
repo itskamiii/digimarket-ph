@@ -1,10 +1,11 @@
 import { AnimatePresence, motion } from "framer-motion";
 import { AlertCircle, Loader2, ShoppingBag, X } from "lucide-react";
-import { useMemo, useState, type FormEvent } from "react";
+import { useEffect, useMemo, useState, type FormEvent } from "react";
 import { useCart } from "../context/CartContext";
-import { CheckoutUnavailableError, createCheckout } from "../lib/api";
+import { CheckoutUnavailableError, createCheckout, fetchLalamoveQuote } from "../lib/api";
 import { formatPeso } from "../lib/format";
 import phAddresses from "../lib/ph-addresses.json";
+import LalamovePinPicker from "./LalamovePinPicker";
 import { EASE } from "./Reveal";
 
 type PhAddress = { province: string; city: string; zip: string };
@@ -15,6 +16,11 @@ const ERROR_MESSAGES: Record<string, string> = {
   invalid_customer: "Please fill in your name, email, and phone number.",
   invalid_shipping: "Please fill in a complete shipping address.",
   invalid_fulfillment_method: "Please choose how you'd like to pay.",
+  invalid_shipping_method: "Please choose a shipping option.",
+  lalamove_requires_online_payment: "Lalamove needs to be paid online — switch to online payment or choose LBC.",
+  lalamove_ncr_only: "Lalamove is only available within Metro Manila — choose LBC for other provinces.",
+  invalid_dropoff_pin: "Please drop a pin at your exact delivery location.",
+  lalamove_unavailable: "Couldn't reach Lalamove for a delivery quote — please try again, or choose LBC.",
   empty_cart: "Your bag is empty.",
   rate_limited: "Too many checkout attempts — please wait a few minutes and try again.",
 };
@@ -34,6 +40,47 @@ export default function Checkout({ open, onClose }: { open: boolean; onClose: ()
   const [province, setProvince] = useState("");
   const [postalCode, setPostalCode] = useState("");
   const [fulfillmentMethod, setFulfillmentMethod] = useState<"online" | "cod">("online");
+  const [shippingMethod, setShippingMethod] = useState<"lbc" | "lalamove">("lbc");
+  const [dropoffPin, setDropoffPin] = useState<{ lat: number; lng: number } | null>(null);
+  const [lalamoveFeePhp, setLalamoveFeePhp] = useState<number | null>(null);
+  const [lalamoveQuoteLoading, setLalamoveQuoteLoading] = useState(false);
+  const [lalamoveQuoteError, setLalamoveQuoteError] = useState<string | null>(null);
+
+  // Lalamove is prepay-only (no COD) and NCR-only — falls back to LBC the moment either
+  // condition stops holding, e.g. the customer switches to COD or picks a non-NCR city.
+  const isMetroManila = province === "Metro Manila";
+  useEffect(() => {
+    if (shippingMethod === "lalamove" && (!isMetroManila || fulfillmentMethod !== "online")) {
+      setShippingMethod("lbc");
+    }
+  }, [isMetroManila, fulfillmentMethod, shippingMethod]);
+
+  // Fee depends only on the dropped pin, not the typed address text, so this only
+  // re-fires when the pin actually moves — not on every keystroke elsewhere in the form.
+  useEffect(() => {
+    if (shippingMethod !== "lalamove" || !dropoffPin) {
+      setLalamoveFeePhp(null);
+      return;
+    }
+    let cancelled = false;
+    setLalamoveQuoteLoading(true);
+    setLalamoveQuoteError(null);
+    const address = [line1, line2, city, province, postalCode].filter(Boolean).join(", ") || "Metro Manila, Philippines";
+    fetchLalamoveQuote(dropoffPin, address)
+      .then((quote) => {
+        if (!cancelled) setLalamoveFeePhp(quote.feePhp);
+      })
+      .catch((err) => {
+        if (!cancelled) setLalamoveQuoteError(err instanceof Error ? err.message : "Couldn't get a quote.");
+      })
+      .finally(() => {
+        if (!cancelled) setLalamoveQuoteLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [shippingMethod, dropoffPin]);
 
   // City options narrow to the chosen province once one's picked; searching city first
   // (before province) still works against the full list, and picking a city fills in
@@ -67,6 +114,10 @@ export default function Checkout({ open, onClose }: { open: boolean; onClose: ()
   const onSubmit = async (e: FormEvent) => {
     e.preventDefault();
     if (items.length === 0 || submitting) return;
+    if (shippingMethod === "lalamove" && !dropoffPin) {
+      setError("Please drop a pin at your exact delivery location.");
+      return;
+    }
     setSubmitting(true);
     setError(null);
 
@@ -76,6 +127,8 @@ export default function Checkout({ open, onClose }: { open: boolean; onClose: ()
         customer: { name, email, phone },
         shipping: { line1, line2: line2 || undefined, city, province, postalCode },
         fulfillmentMethod,
+        shippingMethod,
+        dropoffPin: shippingMethod === "lalamove" ? dropoffPin! : undefined,
       });
 
       if (result.redirect) {
@@ -182,8 +235,26 @@ export default function Checkout({ open, onClose }: { open: boolean; onClose: ()
                         ))}
                       </ul>
                       <div className="mt-3 flex items-center justify-between border-t border-ink-900/8 pt-3">
-                        <span className="text-sm font-semibold text-ink-900">Subtotal</span>
-                        <span className="font-display text-lg font-bold text-ink-900">{formatPeso(subtotal)}</span>
+                        <span className="text-sm text-ink-500">Subtotal</span>
+                        <span className="text-sm font-semibold text-ink-900">{formatPeso(subtotal)}</span>
+                      </div>
+                      {shippingMethod === "lalamove" && (
+                        <div className="mt-1.5 flex items-center justify-between">
+                          <span className="text-sm text-ink-500">Lalamove delivery</span>
+                          <span className="text-sm font-semibold text-ink-900">
+                            {lalamoveQuoteLoading
+                              ? "Getting quote…"
+                              : lalamoveFeePhp !== null
+                                ? formatPeso(lalamoveFeePhp)
+                                : "—"}
+                          </span>
+                        </div>
+                      )}
+                      <div className="mt-1.5 flex items-center justify-between">
+                        <span className="text-sm font-semibold text-ink-900">Total</span>
+                        <span className="font-display text-lg font-bold text-ink-900">
+                          {formatPeso(subtotal + (shippingMethod === "lalamove" ? (lalamoveFeePhp ?? 0) : 0))}
+                        </span>
                       </div>
                     </div>
 
@@ -277,6 +348,39 @@ export default function Checkout({ open, onClose }: { open: boolean; onClose: ()
                       </div>
                     </div>
 
+                    {isMetroManila && fulfillmentMethod === "online" && (
+                      <div>
+                        <p className="mb-2 text-xs font-bold uppercase tracking-[0.14em] text-ink-400">
+                          How should it ship?
+                        </p>
+                        <div className="grid gap-2 sm:grid-cols-2">
+                          <RadioCard
+                            label="LBC"
+                            hint="NCR in 1 day, elsewhere 1–7 days"
+                            checked={shippingMethod === "lbc"}
+                            onSelect={() => setShippingMethod("lbc")}
+                          />
+                          <RadioCard
+                            label="Lalamove"
+                            hint="Same-day, NCR only"
+                            checked={shippingMethod === "lalamove"}
+                            onSelect={() => setShippingMethod("lalamove")}
+                          />
+                        </div>
+                        {shippingMethod === "lalamove" && (
+                          <div className="mt-3 flex flex-col gap-2">
+                            <p className="text-xs text-ink-500">
+                              Drop a pin at your exact delivery location — tap the map, or drag the pin once it's placed.
+                            </p>
+                            <LalamovePinPicker value={dropoffPin} onChange={setDropoffPin} />
+                            {lalamoveQuoteError && (
+                              <p className="text-xs text-flash-600">{lalamoveQuoteError}</p>
+                            )}
+                          </div>
+                        )}
+                      </div>
+                    )}
+
                     {error && (
                       <div className="flex items-start gap-2 rounded-2xl bg-flash-500/10 px-4 py-3 text-sm text-flash-600">
                         <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
@@ -286,7 +390,9 @@ export default function Checkout({ open, onClose }: { open: boolean; onClose: ()
 
                     <button
                       type="submit"
-                      disabled={submitting}
+                      disabled={
+                        submitting || (shippingMethod === "lalamove" && (!dropoffPin || lalamoveQuoteLoading))
+                      }
                       className="btn-shine flex items-center justify-center gap-2 rounded-full bg-flash-500 px-6 py-4 text-sm font-semibold text-cream-50 shadow-xl shadow-flash-500/35 transition-all duration-300 hover:-translate-y-0.5 hover:bg-flash-600 disabled:pointer-events-none disabled:opacity-60"
                     >
                       {submitting && <Loader2 className="h-4 w-4 animate-spin" />}
