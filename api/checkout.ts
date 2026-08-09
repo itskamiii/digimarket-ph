@@ -12,6 +12,7 @@ import {
 } from "../server/db.js";
 import { notifyNewOrder } from "../server/notify.js";
 import { createCheckoutSession } from "../server/paymongo.js";
+import { allowCheckoutAttempt, getClientIp } from "../server/rateLimit.js";
 import type { CheckoutItemInput, CheckoutRequestBody, ShippingAddress } from "../server/types.js";
 
 function isValidEmail(email: string): boolean {
@@ -40,6 +41,11 @@ async function rollbackOrder(orderId: string): Promise<void> {
 }
 
 export async function POST(request: Request) {
+  const clientIp = getClientIp(request);
+  if (!(await allowCheckoutAttempt(clientIp))) {
+    return Response.json({ error: "rate_limited" }, { status: 429 });
+  }
+
   let body: CheckoutRequestBody;
   try {
     body = (await request.json()) as CheckoutRequestBody;

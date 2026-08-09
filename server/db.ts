@@ -184,13 +184,17 @@ export async function markOrderCancelled(orderId: string): Promise<void> {
   if (error) throw error;
 }
 
-// Idempotent — returns false if the order was already 'paid' (safe on webhook replay).
+// Only ever pays an order still sitting in "pending_payment" — returns false both for a
+// safe webhook replay (already 'paid') AND for a dead order (cancelled/expired, e.g. its
+// reservation timed out before this late payment confirmation arrived). Callers must tell
+// those two cases apart themselves (see getOrderById) since only the second one needs a
+// human — a payment came in for a unit that's no longer reserved for this order.
 export async function markOrderPaid(orderId: string, paymentMethod: string | null): Promise<boolean> {
   const { data, error } = await getSupabase()
     .from("orders")
     .update({ status: "paid", payment_method: paymentMethod })
     .eq("id", orderId)
-    .neq("status", "paid")
+    .eq("status", "pending_payment")
     .select("id");
   if (error) throw error;
   return (data ?? []).length > 0;

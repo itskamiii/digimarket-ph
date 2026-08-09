@@ -13,6 +13,7 @@ const ERROR_MESSAGES: Record<string, string> = {
   cod_requires_metro_manila:
     "Cash on Delivery is only available within Metro Manila — choose online payment, or update your city.",
   empty_cart: "Your bag is empty.",
+  rate_limited: "Too many checkout attempts — please wait a few minutes and try again.",
 };
 function friendlyError(message: string): string {
   return ERROR_MESSAGES[message] ?? "Something went wrong on our end — please try again.";

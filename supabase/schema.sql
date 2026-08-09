@@ -73,6 +73,27 @@ create table if not exists order_items (
 );
 create index if not exists order_items_order_id_idx on order_items(order_id);
 
+-- Unauthenticated + unlimited checkout attempts would let anyone perpetually re-reserve
+-- a one-of-a-kind unit forever (re-triggering checkout every ~15 min, right as each
+-- reservation is about to lapse) with zero cost to them — a standing denial-of-inventory
+-- risk against a store where every item is irreplaceable. One row per checkout attempt;
+-- server/rateLimit.ts counts recent rows per IP before allowing a new one through.
+create table if not exists checkout_attempts (
+  id bigint generated always as identity primary key,
+  ip_address text not null,
+  created_at timestamptz not null default now()
+);
+create index if not exists checkout_attempts_ip_created_idx on checkout_attempts(ip_address, created_at);
+alter table checkout_attempts enable row level security;
+
+-- Keeps the table from growing forever — old rows are only ever relevant for a few
+-- minutes of rate-limit lookback.
+select cron.schedule(
+  'prune-checkout-attempts',
+  '0 * * * *',
+  $$ delete from checkout_attempts where created_at < now() - interval '1 day'; $$
+);
+
 -- RLS on, no policies: only the secret/service_role key (used exclusively by our own
 -- /api functions) can touch these tables. Without this, Supabase's auto-generated REST
 -- API would expose customer PII (orders.shipping_address, etc.) to anyone holding even
@@ -120,9 +141,19 @@ revoke execute on function mark_units_sold(uuid) from public, anon, authenticate
 grant execute on function reserve_units(text[], uuid, integer) to service_role;
 grant execute on function mark_units_sold(uuid) to service_role;
 
--- Every minute, release checkout reservations nobody paid for.
+-- Every minute, release checkout reservations nobody paid for, then expire the orders
+-- that lost their reservation this way. Without the second statement, a "pending_payment"
+-- order sits in that status forever even after its unit is long gone — and if PayMongo's
+-- checkout session outlives our reservation TTL and the customer pays late, the webhook
+-- would otherwise mark that dead order "paid" for a unit it no longer holds. Kit-only
+-- orders are untouched (the `exists (... item_type = 'unit')` guard) since kits were never
+-- unit-reservation-constrained in the first place.
 -- (The reservation UPDATE in server/db.ts already treats expired rows as steal-able
 -- immediately, so this is housekeeping for the Table Editor view, not the safety net itself.)
+--
+-- cron.schedule() upserts by job name (updates the existing job's command if one already
+-- exists) — no "if not exists" guard here, unlike the rest of this file, since that guard
+-- would silently block this job's body from ever being updated on a re-run.
 select cron.schedule(
   'release-expired-reservations',
   '* * * * *',
@@ -130,7 +161,12 @@ select cron.schedule(
     update units
     set status = 'available', reservation_expires_at = null, reserved_order_id = null
     where status = 'reserved' and reservation_expires_at < now();
+
+    update orders o
+    set status = 'expired', updated_at = now()
+    where o.status = 'pending_payment'
+      and o.fulfillment_method = 'online'
+      and exists (select 1 from order_items oi where oi.order_id = o.id and oi.item_type = 'unit')
+      and not exists (select 1 from units u where u.reserved_order_id = o.id and u.status = 'reserved');
   $$
-) where not exists (
-  select 1 from cron.job where jobname = 'release-expired-reservations'
 );

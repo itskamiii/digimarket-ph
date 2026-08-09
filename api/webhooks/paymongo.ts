@@ -5,7 +5,7 @@ import {
   markOrderPaid,
   markUnitsSold,
 } from "../../server/db.js";
-import { notifyNewOrder } from "../../server/notify.js";
+import { notifyNewOrder, notifyPaymentOnDeadOrder } from "../../server/notify.js";
 import { verifyPaymongoSignature } from "../../server/paymongo.js";
 
 // PayMongo's webhook envelope: { data: { attributes: { type: "<event>", data: <resource> } } }.
@@ -88,6 +88,17 @@ export async function POST(request: Request) {
         items: orderItems.map((i) => ({ name: i.name_snapshot, price: i.price_php_snapshot, quantity: i.quantity })),
         totalPhp: order.total_php,
       });
+    } else if (order.status !== "paid") {
+      // `order` was fetched before markOrderPaid ran, so its status here reflects what
+      // the order was BEFORE this webhook — not "paid" means it was already dead
+      // (cancelled/expired) when this payment confirmation arrived. Real money came in
+      // for a unit that may no longer be held for this customer; needs a human.
+      console.error("PayMongo webhook: payment confirmed for a dead order", {
+        orderId: order.id,
+        orderStatus: order.status,
+        eventType,
+      });
+      await notifyPaymentOnDeadOrder({ orderId: order.id, orderStatus: order.status, eventType });
     }
     // else: already paid — safe no-op, PayMongo redelivered the event.
 
