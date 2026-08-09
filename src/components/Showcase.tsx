@@ -43,7 +43,7 @@ export default function Showcase({ products }: { products: ProductsState }) {
         <Reveal delay={0.15}>
           <div className="mt-8 flex flex-col items-center justify-center gap-4 text-center">
             <div className="flex flex-wrap items-center justify-center gap-2.5">
-              {["GCash", "Maya", "Visa", "Mastercard", "COD Metro Manila"].map((p) => (
+              {["QRPh", "Cash on Delivery"].map((p) => (
                 <span
                   key={p}
                   className="rounded-full border border-ink-900/10 bg-cream-50 px-4 py-2 font-mono text-[10px] font-bold uppercase tracking-[0.16em] text-ink-500 transition-colors duration-300 hover:border-flash-500/40 hover:text-ink-900"

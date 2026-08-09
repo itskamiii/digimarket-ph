@@ -1,4 +1,3 @@
-import { isMetroManila } from "../server/constants.js";
 import {
   attachPaymongoSession,
   deleteOrder,
@@ -67,9 +66,6 @@ export async function POST(request: Request) {
   }
   if (body.fulfillmentMethod !== "online" && body.fulfillmentMethod !== "cod") {
     return Response.json({ error: "invalid_fulfillment_method" }, { status: 400 });
-  }
-  if (body.fulfillmentMethod === "cod" && !isMetroManila(body.shipping.city)) {
-    return Response.json({ error: "cod_requires_metro_manila" }, { status: 400 });
   }
 
   const unitItems = items.filter((i): i is CheckoutItemInput => i.type === "unit");

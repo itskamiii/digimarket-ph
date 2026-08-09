@@ -10,8 +10,6 @@ const ERROR_MESSAGES: Record<string, string> = {
   invalid_customer: "Please fill in your name, email, and phone number.",
   invalid_shipping: "Please fill in a complete shipping address.",
   invalid_fulfillment_method: "Please choose how you'd like to pay.",
-  cod_requires_metro_manila:
-    "Cash on Delivery is only available within Metro Manila — choose online payment, or update your city.",
   empty_cart: "Your bag is empty.",
   rate_limited: "Too many checkout attempts — please wait a few minutes and try again.",
 };
@@ -179,13 +177,13 @@ export default function Checkout({ open, onClose }: { open: boolean; onClose: ()
                       <div className="grid gap-2 sm:grid-cols-2">
                         <RadioCard
                           label="Pay online now"
-                          hint="GCash, Maya, or card"
+                          hint="Via QR (QRPh)"
                           checked={fulfillmentMethod === "online"}
                           onSelect={() => setFulfillmentMethod("online")}
                         />
                         <RadioCard
                           label="Cash on Delivery"
-                          hint="Metro Manila only"
+                          hint="Shipped via LBC"
                           checked={fulfillmentMethod === "cod"}
                           onSelect={() => setFulfillmentMethod("cod")}
                         />

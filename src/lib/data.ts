@@ -153,7 +153,7 @@ export const FEATURES = [
   {
     icon: "wrench",
     title: "Tested & prepped in Manila",
-    body: "Every unit gets fresh batteries, a sensor dust-out, lens cleaning, and a full flash test before it ships. If we wouldn't gift it, we don't sell it.",
+    body: "Every unit gets a full flash test and function check before it ships. If we wouldn't gift it, we don't sell it.",
   },
   {
     icon: "zap",
@@ -231,7 +231,7 @@ export const FAQS = [
   },
   {
     q: "What condition do the cameras arrive in?",
-    a: "It varies per unit — not every camera is mint, and we're upfront about that. Each listing has its own honest condition grade and description, cosmetic flaws included. What's consistent: every unit gets a full prep pass — sensor dust-out, lens cleaning, fresh battery, flash test, and full function check — before it ships, so no matter the cosmetic grade, everything that matters works properly.",
+    a: "It varies per unit — not every camera is mint, and we're upfront about that. Each listing has its own honest condition grade and description, cosmetic flaws included. What's consistent: every unit gets a flash test and full function check before it ships, so no matter the cosmetic grade, everything that matters works properly.",
   },
   {
     q: "What's included with each camera?",
@@ -255,11 +255,11 @@ export const FAQS = [
   },
   {
     q: "What payment methods do you accept?",
-    a: "Through the website: GCash, Maya, cards, or QR via secure checkout, or Cash on Delivery for Metro Manila orders shipped via LBC. Prefer to arrange things over DM instead? Lalamove orders are fund-transfer only (no COD), meet ups accept cash or fund transfer plus a meet-up fee, and pick ups accept cash or fund transfer with no extra fee.",
+    a: "Through the website: QR (QRPh, scannable from GCash, Maya, or your banking app) via secure checkout, or Cash on Delivery — shipped via LBC, available anywhere in the Philippines. Prefer to arrange things over DM instead? Lalamove is Metro Manila only and fund-transfer before delivery (no COD on Lalamove), meet ups accept cash or fund transfer plus a meet-up fee, and pick ups accept cash or fund transfer with no extra fee.",
   },
   {
     q: "How do I actually place an order?",
-    a: "Browse the catalog, tap a camera's name to see its full details, then hit “Add to bag.” When you're ready, open your bag and check out — fill in your shipping details, then pay online (GCash, card, or QR) or choose Cash on Delivery if you're in Metro Manila. Prefer a meet up, pick up, or Lalamove arrangement instead? DM us on Instagram and we'll sort it out directly.",
+    a: "Browse the catalog, tap a camera's name to see its full details, then hit “Add to bag.” When you're ready, open your bag and check out — fill in your shipping details, then pay online via QR or choose Cash on Delivery (shipped via LBC, anywhere in the Philippines). Prefer a meet up, pick up, or Lalamove arrangement instead? DM us on Instagram and we'll sort it out directly.",
   },
 ];
 
