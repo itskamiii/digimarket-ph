@@ -91,15 +91,12 @@ export default function Footer() {
             © 2026 Digimarket_PH · Manila, PH · Made with 💿 &amp; flash
           </p>
           <div className="flex gap-6">
-            {["Privacy", "Terms", "Policies"].map((l) => (
-              <a
-                key={l}
-                href="#top"
-                className="font-mono text-[10px] font-bold uppercase tracking-[0.2em] text-cream-100/35 transition-colors duration-300 hover:text-flash-400"
-              >
-                {l}
-              </a>
-            ))}
+            <a
+              href="#faq"
+              className="font-mono text-[10px] font-bold uppercase tracking-[0.2em] text-cream-100/35 transition-colors duration-300 hover:text-flash-400"
+            >
+              Policies
+            </a>
           </div>
         </div>
       </div>
