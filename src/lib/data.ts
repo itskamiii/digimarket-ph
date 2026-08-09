@@ -239,7 +239,7 @@ export const FAQS = [
   },
   {
     q: "How fast is shipping?",
-    a: "Depends on the courier. Lalamove: same-day, NCR only. LBC: NCR in 1 day, Luzon in 1–2 days, Visayas in 2–5 days, Mindanao in 3–6 days, remote islands in 3–7 days. Every order ships with tracking.",
+    a: "Depends on the courier. Lalamove: same-day, NCR only. LBC: NCR in 1 day, Luzon in 1–2 days, Visayas in 2–5 days, Mindanao in 3–6 days, remote islands in 3–7 days. Outside the Philippines? We ship worldwide via DHL — message us for a rate and timeline. Every order ships with tracking.",
   },
   {
     q: "Can I return or exchange a unit?",
