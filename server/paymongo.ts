@@ -38,7 +38,10 @@ export async function createCheckoutSession(
       data: {
         attributes: {
           line_items: params.lineItems,
-          payment_method_types: ["card", "gcash"],
+          // qrph is the only channel active on the live account until TIN
+          // verification unlocks card/gcash — kept in the list so they start
+          // working automatically once PayMongo approves them, no redeploy needed.
+          payment_method_types: ["card", "gcash", "qrph"],
           success_url: params.successUrl,
           cancel_url: params.cancelUrl,
           description: params.description,
