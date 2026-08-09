@@ -163,7 +163,7 @@ export const FEATURES = [
   {
     icon: "sparkles",
     title: "Rare finds, fair prices",
-    body: "Curated drops of Canon, Sony, Fujifilm, and Olympus — hunted from ukay-ukays and Japan surplus to garage sales, priced for students.",
+    body: "Curated drops of Sony, Nikon, Casio, Panasonic, and Olympus — rare finds, priced for students.",
   },
 ];
 
@@ -227,7 +227,7 @@ export const PLANS: Plan[] = [
 export const FAQS = [
   {
     q: "Are these cameras actually old?",
-    a: "Yes — and that's the point. We source authentic 2000s digicams from Japan surplus, ukay-ukays, and private collections. The vintage sensor is what gives your photos that warm, grainy, film-like look that modern phones can't reproduce.",
+    a: "Yes — and that's the point. We source authentic 2000s digicams for you. The vintage sensor is what gives your photos that warm, grainy, film-like look that modern phones can't reproduce.",
   },
   {
     q: "What condition do the cameras arrive in?",
