@@ -66,18 +66,58 @@ export const CUSTOMER_TAGS = [
   { handle: "@zysarrizada", image: "https://bfwaehbdyxtdfjdmgxor.supabase.co/storage/v1/object/public/unit-photos/customer-tags/zysarrizada.jpg" },
 ];
 
-// Real customer DM screenshots (cropped by the owner before sending) — genuine reviews,
-// not written copy. Filename is the customer's IG handle.
+// Real customers, real DMs — quotes are transcribed (lightly cleaned up for typos only,
+// never invented) from screenshots the owner sent; avatar is their real IG profile photo.
 export const CUSTOMER_REVIEWS = [
-  { handle: "@aaartrose", image: "https://bfwaehbdyxtdfjdmgxor.supabase.co/storage/v1/object/public/unit-photos/reviews/aaartrose.jpg" },
-  { handle: "@annexdreya", image: "https://bfwaehbdyxtdfjdmgxor.supabase.co/storage/v1/object/public/unit-photos/reviews/annexdreya.jpg" },
-  { handle: "@gelytagle", image: "https://bfwaehbdyxtdfjdmgxor.supabase.co/storage/v1/object/public/unit-photos/reviews/gelytagle.jpg" },
-  { handle: "@gwyneyy", image: "https://bfwaehbdyxtdfjdmgxor.supabase.co/storage/v1/object/public/unit-photos/reviews/gwyneyy.jpg" },
-  { handle: "@hojixchas", image: "https://bfwaehbdyxtdfjdmgxor.supabase.co/storage/v1/object/public/unit-photos/reviews/hojixchas.jpg" },
-  { handle: "@mara.ielle", image: "https://bfwaehbdyxtdfjdmgxor.supabase.co/storage/v1/object/public/unit-photos/reviews/mara.ielle.jpg" },
-  { handle: "@mrdxyz", image: "https://bfwaehbdyxtdfjdmgxor.supabase.co/storage/v1/object/public/unit-photos/reviews/mrdxyz.jpg" },
-  { handle: "@rhessiaa", image: "https://bfwaehbdyxtdfjdmgxor.supabase.co/storage/v1/object/public/unit-photos/reviews/rhessiaa.jpg" },
-  { handle: "@sapphire_elain1990", image: "https://bfwaehbdyxtdfjdmgxor.supabase.co/storage/v1/object/public/unit-photos/reviews/sapphire_elain1990.jpg" },
+  {
+    handle: "@aaartrose",
+    avatar: "https://bfwaehbdyxtdfjdmgxor.supabase.co/storage/v1/object/public/unit-photos/reviews/pfp/aaartrose.jpg",
+    quote:
+      "Hellooo poo, tysm for the cam — i really loved it, even my block mates were asking me where I bought it po cause they loved it as well. Just received the cam yesterday pala po.",
+  },
+  {
+    handle: "@annexdreya",
+    avatar: "https://bfwaehbdyxtdfjdmgxor.supabase.co/storage/v1/object/public/unit-photos/reviews/pfp/annexdreya.jpg",
+    quote:
+      "Supeeeer po, excited to take photos using this cam. Grabe yung quality — pagbukas ko pa lang, sabi ko hala, good as brand new huhu. I'm very lucky po to have seen your account. Super nice niyo pa po ka-transact, thank you miss!!!",
+  },
+  {
+    handle: "@gelytagle",
+    avatar: "https://bfwaehbdyxtdfjdmgxor.supabase.co/storage/v1/object/public/unit-photos/reviews/pfp/gelytagle.jpg",
+    quote: "Thank you so much again, love the cam already!",
+  },
+  {
+    handle: "@gwyneyyy",
+    avatar: "https://bfwaehbdyxtdfjdmgxor.supabase.co/storage/v1/object/public/unit-photos/reviews/pfp/gwyneyyy.jpg",
+    quote:
+      "Hii poo! Sorry for the late feedback but I super love the camera poo. Sharing to you some wholesome photos I took lately. Thank you soooo much.",
+  },
+  {
+    handle: "@hojixchas",
+    avatar: "https://bfwaehbdyxtdfjdmgxor.supabase.co/storage/v1/object/public/unit-photos/reviews/pfp/hojixchas.jpg",
+    quote: "Kidding aside, thank u so so much!! Sooo love the camera.",
+  },
+  {
+    handle: "@mara.ielle",
+    avatar: "https://bfwaehbdyxtdfjdmgxor.supabase.co/storage/v1/object/public/unit-photos/reviews/pfp/mara.ielle.jpg",
+    quote: "It exceeded my expectations!",
+  },
+  {
+    handle: "@mrdxyz",
+    avatar: "https://bfwaehbdyxtdfjdmgxor.supabase.co/storage/v1/object/public/unit-photos/reviews/pfp/mrdxyz.jpg",
+    quote: "Hellooo poo, I received my camera yesterday — thank you so much!",
+  },
+  {
+    handle: "@rhessiaa",
+    avatar: "https://bfwaehbdyxtdfjdmgxor.supabase.co/storage/v1/object/public/unit-photos/reviews/pfp/rhessiaa.jpg",
+    quote: "Okay! Thank you so much!! Can't wait to capture my grad tomorrow with this camera!!",
+  },
+  {
+    handle: "@sapphire_elaine1990",
+    avatar:
+      "https://bfwaehbdyxtdfjdmgxor.supabase.co/storage/v1/object/public/unit-photos/reviews/pfp/sapphire_elaine1990.jpg",
+    quote: "Sis, nakita ko na — hehe, sorry, kakauwi ko lang kasi super in love, hahaha!",
+  },
 ];
 
 export const STATS = [

@@ -1,5 +1,16 @@
+import { Star } from "lucide-react";
 import { CUSTOMER_REVIEWS, CUSTOMER_TAGS } from "../lib/data";
 import { Eyebrow, Reveal } from "./Reveal";
+
+function Stars() {
+  return (
+    <div className="flex gap-1" aria-label="5 out of 5 stars">
+      {Array.from({ length: 5 }).map((_, i) => (
+        <Star key={i} className="h-3.5 w-3.5 fill-flash-500 text-flash-500" />
+      ))}
+    </div>
+  );
+}
 
 function CustomerTagsMarquee() {
   return (
@@ -56,21 +67,23 @@ export default function Testimonials() {
 
         <CustomerTagsMarquee />
 
-        <div className="mt-14 columns-1 gap-5 sm:columns-2 lg:columns-3">
+        <div className="mt-14 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
           {CUSTOMER_REVIEWS.map((r, i) => (
-            <Reveal key={r.handle + i} delay={Math.min(i, 6) * 0.06} className="mb-5 break-inside-avoid">
-              <figure className="group overflow-hidden rounded-3xl bg-ink-950 shadow-[0_2px_20px_-8px_rgba(27,23,18,0.12)] transition-all duration-500 hover:-translate-y-1.5 hover:shadow-[0_26px_55px_-22px_rgba(27,23,18,0.28)]">
-                <img
-                  src={r.image}
-                  alt={`DM screenshot from ${r.handle}`}
-                  loading="lazy"
-                  className="w-full"
-                />
-                <figcaption className="flex items-center justify-between px-5 py-3.5">
-                  <span className="font-mono text-[10px] font-bold uppercase tracking-[0.16em] text-cream-100/50">
-                    {r.handle}
-                  </span>
-                  <span className="font-mono text-[9px] font-bold uppercase tracking-[0.2em] text-lcd-400">
+            <Reveal key={r.handle} delay={Math.min(i, 6) * 0.06}>
+              <figure className="group flex h-full flex-col justify-between overflow-hidden rounded-3xl border border-ink-900/8 bg-cream-50 p-7 shadow-[0_2px_20px_-8px_rgba(27,23,18,0.12)] transition-all duration-500 hover:-translate-y-1.5 hover:shadow-[0_26px_55px_-22px_rgba(27,23,18,0.28)]">
+                <div>
+                  <Stars />
+                  <blockquote className="mt-4 text-sm leading-relaxed text-ink-600">“{r.quote}”</blockquote>
+                </div>
+                <figcaption className="mt-7 flex items-center gap-3.5">
+                  <img
+                    src={r.avatar}
+                    alt=""
+                    aria-hidden="true"
+                    className="h-11 w-11 shrink-0 rounded-full object-cover shadow-lg ring-2 ring-cream-50/20 transition-transform duration-500 group-hover:scale-110"
+                  />
+                  <p className="font-semibold text-ink-900">{r.handle}</p>
+                  <span className="ml-auto font-mono text-[9px] font-bold uppercase tracking-[0.2em] text-lcd-500">
                     ✓ verified
                   </span>
                 </figcaption>
