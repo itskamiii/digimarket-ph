@@ -1,5 +1,5 @@
 import { getSupabase } from "./supabase.js";
-import type { KitRow, OrderRow, OrderStatusValue, ShippingAddress, UnitRow } from "./types.js";
+import type { KitRow, OrderItemRow, OrderRow, OrderStatusValue, ShippingAddress, UnitRow } from "./types.js";
 
 export async function getProducts(): Promise<{ units: UnitRow[]; kits: KitRow[] }> {
   const supabase = getSupabase();
@@ -131,6 +131,12 @@ export async function insertOrderItems(orderId: string, items: NewOrderItemInput
       }))
     );
   if (error) throw error;
+}
+
+export async function getOrderItemsByOrderId(orderId: string): Promise<OrderItemRow[]> {
+  const { data, error } = await getSupabase().from("order_items").select("*").eq("order_id", orderId);
+  if (error) throw error;
+  return data as OrderItemRow[];
 }
 
 // Rolls back an order that failed to fully reserve its units (cascades to order_items).

@@ -10,6 +10,7 @@ import {
   reserveUnits,
   type NewOrderItemInput,
 } from "../server/db.js";
+import { notifyNewOrder } from "../server/notify.js";
 import { createCheckoutSession } from "../server/paymongo.js";
 import type { CheckoutItemInput, CheckoutRequestBody, ShippingAddress } from "../server/types.js";
 
@@ -125,6 +126,18 @@ export async function POST(request: Request) {
     }
 
     if (body.fulfillmentMethod === "cod") {
+      // COD is a committed sale at creation time (no payment webhook to hang the
+      // notification off of), so notify right here.
+      await notifyNewOrder({
+        orderId: order.id,
+        customerName: customer.name.trim(),
+        customerEmail: customer.email.trim(),
+        customerPhone: customer.phone.trim(),
+        shippingAddress: body.shipping,
+        fulfillmentMethod: "cod",
+        items: orderItems.map((i) => ({ name: i.name, price: i.price, quantity: i.quantity })),
+        totalPhp: subtotalPhp,
+      });
       return Response.json({ orderId: order.id, redirect: null });
     }
 

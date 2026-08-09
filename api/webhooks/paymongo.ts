@@ -1,4 +1,11 @@
-import { getOrderByCheckoutSessionId, getOrderById, markOrderPaid, markUnitsSold } from "../../server/db.js";
+import {
+  getOrderByCheckoutSessionId,
+  getOrderById,
+  getOrderItemsByOrderId,
+  markOrderPaid,
+  markUnitsSold,
+} from "../../server/db.js";
+import { notifyNewOrder } from "../../server/notify.js";
 import { verifyPaymongoSignature } from "../../server/paymongo.js";
 
 // PayMongo's webhook envelope: { data: { attributes: { type: "<event>", data: <resource> } } }.
@@ -70,6 +77,17 @@ export async function POST(request: Request) {
     const newlyPaid = await markOrderPaid(order.id, paymentMethod);
     if (newlyPaid) {
       await markUnitsSold(order.id);
+      const orderItems = await getOrderItemsByOrderId(order.id);
+      await notifyNewOrder({
+        orderId: order.id,
+        customerName: order.customer_name,
+        customerEmail: order.customer_email,
+        customerPhone: order.customer_phone,
+        shippingAddress: order.shipping_address,
+        fulfillmentMethod: "online",
+        items: orderItems.map((i) => ({ name: i.name_snapshot, price: i.price_php_snapshot, quantity: i.quantity })),
+        totalPhp: order.total_php,
+      });
     }
     // else: already paid — safe no-op, PayMongo redelivered the event.
 
