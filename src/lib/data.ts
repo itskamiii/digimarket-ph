@@ -231,19 +231,19 @@ export const FAQS = [
   },
   {
     q: "What condition do the cameras arrive in?",
-    a: "Excellent. Every unit gets a full prep pass — sensor dust-out, lens cleaning, fresh battery, flash test, and full function check — before it ships. Cosmetic wear (tiny scratches, scuffs) may remain — it's part of the charm, but everything that matters works perfectly.",
+    a: "It varies per unit — not every camera is mint, and we're upfront about that. Each listing has its own honest condition grade and description, cosmetic flaws included. What's consistent: every unit gets a full prep pass — sensor dust-out, lens cleaning, fresh battery, flash test, and full function check — before it ships, so no matter the cosmetic grade, everything that matters works properly.",
   },
   {
-    q: "Do they work with modern SD cards?",
-    a: "Yep! All our units accept SD cards up to 32GB (we include one in every kit). Photos transfer through the included USB card reader to any laptop or phone — even via OTG adapters.",
+    q: "What's included with each camera?",
+    a: "Inclusions can vary slightly per unit — check the full listing for specifics — but most cameras ship with the charger, battery, a memory card, stickers, and a Digimarket_PH box.",
   },
   {
     q: "How fast is shipping?",
-    a: "Metro Manila: next day. Luzon: 1–3 days. Visayas & Mindanao: 3–5 days. Every order ships with tracking, and we package cameras in bubble-wrap armor. Shipping is free on Y2K Starter and up.",
+    a: "Depends on the courier. Lalamove: same-day, Metro Manila only. LBC: NCR in 1 day, Luzon in 1–2 days, Visayas in 2–5 days, Mindanao in 3–6 days, remote islands in 3–7 days. Every order ships with tracking.",
   },
   {
     q: "Can I return or exchange a unit?",
-    a: "No — given the nature of used cameras (sensitive to handling, may carry pre-existing wear), all sales are final: no returns, refunds, or exchanges under any circumstances. That's why we disclose every known flaw upfront in the listing and send video proof of your exact unit working before it ships. Please ask any questions before you buy. Damage during transit is between you and the courier — file that claim directly with them.",
+    a: "We offer a 3-day warranty from the day you receive your unit — if a defect is proven to have existed before it shipped, let us know within that window and we'll make it right. Since every unit is tested and we send video proof before shipping, this covers genuine pre-existing issues, not damage from drops, water, or wear after it's in your hands. Damage that happens in transit is between you and the courier — file that claim with them directly. Outside of these cases, all sales are final, so please read the full listing and ask any questions before you buy.",
   },
   {
     q: "Can I reserve a unit instead of paying in full?",
@@ -251,15 +251,15 @@ export const FAQS = [
   },
   {
     q: "Do I need to know photography?",
-    a: "Zero experience needed. Digicams are literally point-and-shoot — auto mode handles focus, exposure, and flash. The included zine teaches you the 5 tricks that make photos look intentional (spoiler: it's mostly flash + distance).",
+    a: "Zero experience needed. Digicams are literally point-and-shoot — auto mode handles focus, exposure, and flash. The biggest trick to photos that look intentional? Mostly just flash + distance.",
   },
   {
     q: "What payment methods do you accept?",
-    a: "GCash, Maya, bank transfer, credit/debit cards, and Cash on Delivery within Metro Manila.",
+    a: "Through the website: GCash, Maya, cards, or QR via secure checkout, or Cash on Delivery for Metro Manila orders shipped via LBC. Prefer to arrange things over DM instead? Lalamove orders are fund-transfer only (no COD), meet ups accept cash or fund transfer plus a meet-up fee, and pick ups accept cash or fund transfer with no extra fee.",
   },
   {
     q: "How do I actually place an order?",
-    a: "Read the product description fully, then message us on Instagram when you're ready to buy — we'll ask for your name, the unit, complete address, Lalamove pin, contact number, and proof of full payment. Please be sure before confirming: last-minute cancellations affect a small business like ours, and we reserve the right to decline future orders from repeat cancellers.",
+    a: "Browse the catalog, tap a camera's name to see its full details, then hit “Add to bag.” When you're ready, open your bag and check out — fill in your shipping details, then pay online (GCash, card, or QR) or choose Cash on Delivery if you're in Metro Manila. Prefer a meet up, pick up, or Lalamove arrangement instead? DM us on Instagram and we'll sort it out directly.",
   },
 ];
 
