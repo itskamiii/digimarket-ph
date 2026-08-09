@@ -1,8 +1,12 @@
 node_modules/
 dist/
 photos-to-upload/
+backups/
 .vercel/
 .env
 .env.*
 !.env.example
 *.local
+
+.vercel
+.env*
