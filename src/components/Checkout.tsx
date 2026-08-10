@@ -37,18 +37,17 @@ const IN_PERSON_METHODS = new Set<ShippingMethod>(["meetup", "pickup"]);
 
 // The COD-style second payment option is courier-specific in both label and mechanics:
 // all three couriers skip PayMongo and become a committed order the moment it's
-// submitted (same indefinite-hold behavior), but only LBC's carries a real handling fee.
-function secondPaymentOption(shippingMethod: ShippingMethod, codSurchargePhp: number): { label: string; hint: string } {
+// submitted (same indefinite-hold behavior). LBC's actual shipping fee (weight/distance-
+// dependent, no live rate available) is never computed by the site either way — always
+// relayed via DM, collected as COD on delivery.
+function secondPaymentOption(shippingMethod: ShippingMethod): { label: string; hint: string } {
   if (shippingMethod === "lalamove") {
     return { label: "Fund transfer upon delivery", hint: "Pay via GCash/bank transfer when it arrives" };
   }
   if (shippingMethod === "dhl") {
     return { label: "Other payment options", hint: "Coordinate via chat/DM" };
   }
-  return {
-    label: "Cash on Delivery",
-    hint: codSurchargePhp > 0 ? `+${formatPeso(codSurchargePhp)} COD handling fee` : "+₱5 per ₱500 COD handling fee",
-  };
+  return { label: "Cash on Delivery", hint: "Final SF via DM" };
 }
 
 const COURIER_LABELS: Record<ShippingMethod, string> = {
@@ -111,16 +110,14 @@ export default function Checkout({ open, onClose }: { open: boolean; onClose: ()
     }
   }, [shippingMethod, fulfillmentMethod]);
 
-  // Preview value (always computed for LBC, regardless of which payment option is
-  // currently selected) drives the RadioCard hint so the customer sees the real fee
-  // before choosing COD; the applied value only counts once COD is actually selected.
-  const lbcCodSurchargePreviewPhp = shippingMethod === "lbc" ? Math.floor(subtotal / 500) * 5 : 0;
-  const codSurchargePhp = fulfillmentMethod === "cod" ? lbcCodSurchargePreviewPhp : 0;
   // Flat meet-up fee, cheaper within Rizal (where the business is based, in Cainta) than
   // further out — no fee at all for pickup.
   const meetupFeePhp = shippingMethod === "meetup" ? (province === "Rizal" ? 250 : 300) : 0;
+  // LBC's actual shipping fee is never computed here (it's weight/distance-dependent and
+  // always relayed via DM, collected as COD) — only Lalamove and Meet up contribute a
+  // real number to the checkout total.
   const shippingFeePhp =
-    shippingMethod === "lalamove" ? (lalamoveFeePhp ?? 0) : shippingMethod === "meetup" ? meetupFeePhp : codSurchargePhp;
+    shippingMethod === "lalamove" ? (lalamoveFeePhp ?? 0) : shippingMethod === "meetup" ? meetupFeePhp : 0;
 
   // Fee depends only on the dropped pin, not the typed address text, so this only
   // re-fires when the pin actually moves — not on every keystroke elsewhere in the form.
@@ -320,10 +317,12 @@ export default function Checkout({ open, onClose }: { open: boolean; onClose: ()
                           </span>
                         </div>
                       )}
-                      {codSurchargePhp > 0 && (
+                      {shippingMethod === "lbc" && (
                         <div className="mt-1.5 flex items-center justify-between">
-                          <span className="text-sm text-ink-500">COD handling fee</span>
-                          <span className="text-sm font-semibold text-ink-900">{formatPeso(codSurchargePhp)}</span>
+                          <span className="text-sm text-ink-500">SF</span>
+                          <span className="text-sm font-semibold text-ink-900">
+                            {fulfillmentMethod === "cod" ? "Via DM" : "COD"}
+                          </span>
                         </div>
                       )}
                       {shippingMethod === "meetup" && (
@@ -376,8 +375,8 @@ export default function Checkout({ open, onClose }: { open: boolean; onClose: ()
                             onSelect={() => setFulfillmentMethod("online")}
                           />
                           <RadioCard
-                            label={secondPaymentOption(shippingMethod, lbcCodSurchargePreviewPhp).label}
-                            hint={secondPaymentOption(shippingMethod, lbcCodSurchargePreviewPhp).hint}
+                            label={secondPaymentOption(shippingMethod).label}
+                            hint={secondPaymentOption(shippingMethod).hint}
                             checked={fulfillmentMethod === "cod"}
                             onSelect={() => setFulfillmentMethod("cod")}
                           />

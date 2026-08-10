@@ -145,18 +145,14 @@ export async function POST(request: Request) {
       console.error("POST /api/checkout: Lalamove quotation failed", err);
       return Response.json({ error: "lalamove_unavailable" }, { status: 502 });
     }
-  } else if (shippingMethod === "lbc" && body.fulfillmentMethod === "cod") {
-    // COD handling surcharge the courier collects alongside the cash payment — never
-    // charged through the site. Whole ₱500 bands only; a partial band doesn't count
-    // (₱2,100 → floor(2100/500)=4 bands → ₱20, not 5 bands/₱25).
-    shippingFeePhp = Math.floor(subtotalPhp / 500) * 5;
   } else if (shippingMethod === "meetup") {
     // Flat meet-up fee, collected in person — cheaper within Rizal (where the business
     // is based, in Cainta) than further out. No fee at all for "pickup".
     shippingFeePhp = body.shipping.province === "Rizal" ? 250 : 300;
   }
-  // "dhl" and "pickup" always stay 0 here — DHL has no live rate API yet (quoted via DM),
-  // and pickup genuinely has no fee.
+  // "lbc" and "dhl" always stay 0 here — LBC's actual shipping fee is weight/distance
+  // dependent and always relayed via DM, collected as COD; DHL has no live rate API yet
+  // either. "pickup" genuinely has no fee.
 
   const order = await insertOrder({
     customerName: customer.name.trim(),
