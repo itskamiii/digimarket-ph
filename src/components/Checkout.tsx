@@ -20,6 +20,7 @@ const ERROR_MESSAGES: Record<string, string> = {
   lalamove_ncr_only: "Lalamove is only available within Metro Manila — choose LBC or DHL for other provinces.",
   invalid_dropoff_pin: "Please drop a pin at your exact delivery location.",
   lalamove_unavailable: "Couldn't reach Lalamove for a delivery quote — please try again, or choose LBC.",
+  in_person_requires_manual_payment: "Meet up and Pick up are always settled in person — please try again.",
   empty_cart: "Your bag is empty.",
   rate_limited: "Too many checkout attempts — please wait a few minutes and try again.",
 };
@@ -27,11 +28,16 @@ function friendlyError(message: string): string {
   return ERROR_MESSAGES[message] ?? "Something went wrong on our end — please try again.";
 }
 
-type ShippingMethod = "lbc" | "lalamove" | "dhl";
+type ShippingMethod = "lbc" | "lalamove" | "dhl" | "meetup" | "pickup";
+const SHIPPING_METHODS = ["lbc", "lalamove", "dhl", "meetup", "pickup"] as const;
+// Meet up / Pick up are in-person exchanges, not couriers — there's no "pay online now"
+// alternative for them at all, so the payment-method section is hidden entirely and
+// fulfillmentMethod is forced to "cod" the moment one is selected (see the effect below).
+const IN_PERSON_METHODS = new Set<ShippingMethod>(["meetup", "pickup"]);
 
 // The COD-style second payment option is courier-specific in both label and mechanics:
-// all three skip PayMongo and become a committed order the moment it's submitted (same
-// indefinite-hold behavior), but only LBC's carries a real handling-fee surcharge.
+// all three couriers skip PayMongo and become a committed order the moment it's
+// submitted (same indefinite-hold behavior), but only LBC's carries a real handling fee.
 function secondPaymentOption(shippingMethod: ShippingMethod, codSurchargePhp: number): { label: string; hint: string } {
   if (shippingMethod === "lalamove") {
     return { label: "Fund transfer upon delivery", hint: "Pay via GCash/bank transfer when it arrives" };
@@ -45,16 +51,31 @@ function secondPaymentOption(shippingMethod: ShippingMethod, codSurchargePhp: nu
   };
 }
 
+const COURIER_LABELS: Record<ShippingMethod, string> = {
+  lbc: "LBC",
+  lalamove: "Lalamove",
+  dhl: "DHL",
+  meetup: "Meet up",
+  pickup: "Pick up",
+};
+
 const COURIER_HINTS: Record<ShippingMethod, string> = {
   lbc: "Nationwide, 1–7 days",
   lalamove: "Same-day, NCR only",
   dhl: "Outside the Philippines",
+  meetup: "₱250 in Rizal, ₱300 elsewhere",
+  pickup: "No fee — at our location",
 };
 
 const CONFIRMATION_TEXT: Record<ShippingMethod, string> = {
   lbc: "We've reserved your unit(s). Pay the courier on delivery. We'll DM/email you shipping details shortly.",
-  lalamove: "We've reserved your unit(s). We'll message you on Instagram to arrange the Lalamove booking and fund transfer.",
-  dhl: "We've reserved your unit(s). We'll message you on Instagram to arrange payment and worldwide shipping via DHL.",
+  lalamove:
+    "We've reserved your unit(s). We'll settle everything via DM on Instagram — confirming your fund transfer, booking your Lalamove rider, and sending you the delivery details.",
+  dhl: "We've reserved your unit(s). We'll settle everything via DM on Instagram — confirming payment and quoting your DHL shipping rate.",
+  meetup:
+    "We've reserved your unit(s). We'll DM you on Instagram to set the meet-up time and place — cash or fund transfer plus the meet-up fee on the day.",
+  pickup:
+    "We've reserved your unit(s). We'll DM you on Instagram to arrange a pickup time — cash or fund transfer on the day, no extra fee.",
 };
 
 export default function Checkout({ open, onClose }: { open: boolean; onClose: () => void }) {
@@ -81,12 +102,25 @@ export default function Checkout({ open, onClose }: { open: boolean; onClose: ()
   const isMetroManila = province === "Metro Manila";
   const lalamoveIneligible = shippingMethod === "lalamove" && province !== "" && !isMetroManila;
 
+  // Meet up / Pick up have no "pay online now" alternative — force fulfillmentMethod
+  // to "cod" the instant one is selected, since the payment-method section is hidden
+  // for them entirely (see JSX below).
+  useEffect(() => {
+    if (IN_PERSON_METHODS.has(shippingMethod) && fulfillmentMethod !== "cod") {
+      setFulfillmentMethod("cod");
+    }
+  }, [shippingMethod, fulfillmentMethod]);
+
   // Preview value (always computed for LBC, regardless of which payment option is
   // currently selected) drives the RadioCard hint so the customer sees the real fee
   // before choosing COD; the applied value only counts once COD is actually selected.
   const lbcCodSurchargePreviewPhp = shippingMethod === "lbc" ? Math.floor(subtotal / 500) * 5 : 0;
   const codSurchargePhp = fulfillmentMethod === "cod" ? lbcCodSurchargePreviewPhp : 0;
-  const shippingFeePhp = shippingMethod === "lalamove" ? (lalamoveFeePhp ?? 0) : codSurchargePhp;
+  // Flat meet-up fee, cheaper within Rizal (where the business is based, in Cainta) than
+  // further out — no fee at all for pickup.
+  const meetupFeePhp = shippingMethod === "meetup" ? (province === "Rizal" ? 250 : 300) : 0;
+  const shippingFeePhp =
+    shippingMethod === "lalamove" ? (lalamoveFeePhp ?? 0) : shippingMethod === "meetup" ? meetupFeePhp : codSurchargePhp;
 
   // Fee depends only on the dropped pin, not the typed address text, so this only
   // re-fires when the pin actually moves — not on every keystroke elsewhere in the form.
@@ -292,6 +326,12 @@ export default function Checkout({ open, onClose }: { open: boolean; onClose: ()
                           <span className="text-sm font-semibold text-ink-900">{formatPeso(codSurchargePhp)}</span>
                         </div>
                       )}
+                      {shippingMethod === "meetup" && (
+                        <div className="mt-1.5 flex items-center justify-between">
+                          <span className="text-sm text-ink-500">Meet-up fee</span>
+                          <span className="text-sm font-semibold text-ink-900">{formatPeso(meetupFeePhp)}</span>
+                        </div>
+                      )}
                       <div className="mt-1.5 flex items-center justify-between">
                         <span className="text-sm font-semibold text-ink-900">Total</span>
                         <span className="font-display text-lg font-bold text-ink-900">
@@ -302,13 +342,13 @@ export default function Checkout({ open, onClose }: { open: boolean; onClose: ()
 
                     <div>
                       <p className="mb-2 text-xs font-bold uppercase tracking-[0.14em] text-ink-400">
-                        Choose a courier
+                        How would you like to receive it?
                       </p>
-                      <div className="grid gap-2 sm:grid-cols-3">
-                        {(["lbc", "lalamove", "dhl"] as const).map((method) => (
+                      <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
+                        {SHIPPING_METHODS.map((method) => (
                           <RadioCard
                             key={method}
-                            label={method === "lbc" ? "LBC" : method === "lalamove" ? "Lalamove" : "DHL"}
+                            label={COURIER_LABELS[method]}
                             hint={COURIER_HINTS[method]}
                             checked={shippingMethod === method}
                             onSelect={() => setShippingMethod(method)}
@@ -317,25 +357,33 @@ export default function Checkout({ open, onClose }: { open: boolean; onClose: ()
                       </div>
                     </div>
 
-                    <div>
-                      <p className="mb-2 text-xs font-bold uppercase tracking-[0.14em] text-ink-400">
-                        How would you like to pay?
+                    {IN_PERSON_METHODS.has(shippingMethod) ? (
+                      <p className="text-xs text-ink-500">
+                        {shippingMethod === "meetup"
+                          ? "Cash or fund transfer when we meet up, plus the meet-up fee shown above."
+                          : "Cash or fund transfer when you pick it up — no extra fee."}
                       </p>
-                      <div className="grid gap-2 sm:grid-cols-2">
-                        <RadioCard
-                          label="Pay online now"
-                          hint="Via QR (QRPh)"
-                          checked={fulfillmentMethod === "online"}
-                          onSelect={() => setFulfillmentMethod("online")}
-                        />
-                        <RadioCard
-                          label={secondPaymentOption(shippingMethod, lbcCodSurchargePreviewPhp).label}
-                          hint={secondPaymentOption(shippingMethod, lbcCodSurchargePreviewPhp).hint}
-                          checked={fulfillmentMethod === "cod"}
-                          onSelect={() => setFulfillmentMethod("cod")}
-                        />
+                    ) : (
+                      <div>
+                        <p className="mb-2 text-xs font-bold uppercase tracking-[0.14em] text-ink-400">
+                          How would you like to pay?
+                        </p>
+                        <div className="grid gap-2 sm:grid-cols-2">
+                          <RadioCard
+                            label="Pay online now"
+                            hint="Via QR (QRPh)"
+                            checked={fulfillmentMethod === "online"}
+                            onSelect={() => setFulfillmentMethod("online")}
+                          />
+                          <RadioCard
+                            label={secondPaymentOption(shippingMethod, lbcCodSurchargePreviewPhp).label}
+                            hint={secondPaymentOption(shippingMethod, lbcCodSurchargePreviewPhp).hint}
+                            checked={fulfillmentMethod === "cod"}
+                            onSelect={() => setFulfillmentMethod("cod")}
+                          />
+                        </div>
                       </div>
-                    </div>
+                    )}
 
                     {shippingMethod === "lalamove" && (
                       <div className="flex flex-col gap-2">

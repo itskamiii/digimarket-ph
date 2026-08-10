@@ -70,7 +70,7 @@ export async function POST(request: Request) {
   }
 
   const shippingMethod = body.shippingMethod ?? "lbc";
-  if (shippingMethod !== "lbc" && shippingMethod !== "lalamove" && shippingMethod !== "dhl") {
+  if (!["lbc", "lalamove", "dhl", "meetup", "pickup"].includes(shippingMethod)) {
     return Response.json({ error: "invalid_shipping_method" }, { status: 400 });
   }
   if (shippingMethod === "lalamove") {
@@ -86,6 +86,11 @@ export async function POST(request: Request) {
     ) {
       return Response.json({ error: "invalid_dropoff_pin" }, { status: 400 });
     }
+  }
+  if ((shippingMethod === "meetup" || shippingMethod === "pickup") && body.fulfillmentMethod !== "cod") {
+    // No courier involved at all — always settled in person as cash or fund transfer,
+    // never prepaid through PayMongo.
+    return Response.json({ error: "in_person_requires_manual_payment" }, { status: 400 });
   }
 
   const unitItems = items.filter((i): i is CheckoutItemInput => i.type === "unit");
@@ -145,9 +150,13 @@ export async function POST(request: Request) {
     // charged through the site. Whole ₱500 bands only; a partial band doesn't count
     // (₱2,100 → floor(2100/500)=4 bands → ₱20, not 5 bands/₱25).
     shippingFeePhp = Math.floor(subtotalPhp / 500) * 5;
+  } else if (shippingMethod === "meetup") {
+    // Flat meet-up fee, collected in person — cheaper within Rizal (where the business
+    // is based, in Cainta) than further out. No fee at all for "pickup".
+    shippingFeePhp = body.shipping.province === "Rizal" ? 250 : 300;
   }
-  // "dhl" always stays 0 here — no live rate API yet, shipping cost is quoted and
-  // collected separately via DM regardless of which payment option was chosen.
+  // "dhl" and "pickup" always stay 0 here — DHL has no live rate API yet (quoted via DM),
+  // and pickup genuinely has no fee.
 
   const order = await insertOrder({
     customerName: customer.name.trim(),

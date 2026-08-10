@@ -35,6 +35,13 @@ alter table orders add column if not exists lalamove_order_id text;
 alter table orders add column if not exists lalamove_share_link text;
 alter table orders add column if not exists lalamove_status text;
 
+-- Widen shipping_method to cover in-person meet up / pick up exchanges (no courier at
+-- all). The ADD COLUMN above only sets the constraint on first creation, so an
+-- already-migrated database needs this separate drop-and-recreate to widen it.
+alter table orders drop constraint if exists orders_shipping_method_check;
+alter table orders add constraint orders_shipping_method_check
+  check (shipping_method in ('lbc', 'lalamove', 'dhl', 'meetup', 'pickup'));
+
 create table if not exists units (
   id text primary key,
   category text not null check (category in ('digicam', 'camcorder')),

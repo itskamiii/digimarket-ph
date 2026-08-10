@@ -3,12 +3,13 @@ import type { ShippingAddress, ShippingMethod } from "./types.js";
 const peso = (n: number) => "₱" + n.toLocaleString("en-PH");
 
 // What the owner needs to actually do for a "cod" (not paid through PayMongo) order —
-// the three couriers all skip payment automation for this path, but the follow-up action
-// differs per courier.
+// every method skips payment automation for this path, but the follow-up action differs.
 const COD_PATH_ACTION: Record<ShippingMethod, string> = {
   lbc: "Standard LBC COD — courier collects cash on delivery, nothing further to arrange.",
   lalamove: "Book the Lalamove delivery yourself once you've arranged the fund transfer with the customer.",
   dhl: "Message the customer on Instagram to arrange payment and quote DHL shipping for their destination.",
+  meetup: "Message the customer on Instagram to set the meet-up time and place — cash or fund transfer plus the meet-up fee on the day.",
+  pickup: "Message the customer on Instagram to arrange a pickup time — cash or fund transfer on the day, no extra fee.",
 };
 
 // Reuses the same Formspree form as the waitlist signup — it's already wired to the

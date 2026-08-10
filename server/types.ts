@@ -48,10 +48,10 @@ export type CheckoutItemInput = {
   quantity?: number;
 };
 
-// "dhl" is a real value at the type/schema level so no future migration is needed, but
-// checkout doesn't offer it yet — DHL Express API access is gated behind a business
-// account application that hasn't been submitted.
-export type ShippingMethod = "lbc" | "lalamove" | "dhl";
+// "meetup"/"pickup" are in-person exchanges (no courier at all) — always cash or fund
+// transfer at the exchange, never paid through PayMongo. "dhl" checkout does offer, but
+// its own real shipping cost is still quoted manually since there's no live rate API yet.
+export type ShippingMethod = "lbc" | "lalamove" | "dhl" | "meetup" | "pickup";
 
 export type LatLng = { lat: number; lng: number };
 

@@ -1,4 +1,4 @@
-import type { CheckoutRequestBody } from "../../server/types";
+import type { CheckoutRequestBody, ShippingMethod } from "../../server/types";
 import type { CatalogItem } from "./data";
 
 export type ProductsResponse = {
@@ -66,6 +66,7 @@ export async function fetchLalamoveQuote(dropoffPin: { lat: number; lng: number 
 export type OrderStatusResult = {
   status: "pending_payment" | "paid" | "cod_pending" | "fulfilled" | "cancelled" | "expired";
   fulfillmentMethod: "online" | "cod";
+  shippingMethod: ShippingMethod;
   totalPhp: number;
 };
 

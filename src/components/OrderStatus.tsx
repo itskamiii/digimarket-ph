@@ -4,13 +4,28 @@ import { useEffect, useRef, useState } from "react";
 import { useCart } from "../context/CartContext";
 import { fetchOrderStatus } from "../lib/api";
 import { EASE } from "./Reveal";
+import type { ShippingMethod } from "../../server/types";
 
 type ViewState =
   | { kind: "hidden" }
   | { kind: "confirming"; orderId: string }
-  | { kind: "paid"; orderId: string }
+  | { kind: "paid"; orderId: string; shippingMethod: ShippingMethod }
   | { kind: "pending"; orderId: string } // PayMongo accepted the payment but our webhook hasn't landed yet
   | { kind: "cancelled" };
+
+// Booking is automatic for a paid-online Lalamove order (the PayMongo webhook books the
+// rider right away), so this is about delivery-day coordination, not settling payment —
+// unlike the "fund transfer upon delivery" path in Checkout.tsx, which still owes money.
+// "meetup"/"pickup" can never reach this screen in practice (they always require
+// fulfillmentMethod "cod", so checkout never redirects to PayMongo for them), but the
+// map is typed over the full ShippingMethod union for exhaustiveness.
+const PAID_MESSAGE: Record<ShippingMethod, string> = {
+  lbc: "Thanks for shopping the drop — we'll DM or email you shipping details shortly.",
+  lalamove: "Thanks for shopping the drop — we'll DM you on Instagram once your Lalamove rider is on the way.",
+  dhl: "Thanks for shopping the drop — we'll DM you on Instagram to arrange your DHL shipment.",
+  meetup: "Thanks for shopping the drop — we'll DM you on Instagram to set the meet-up time and place.",
+  pickup: "Thanks for shopping the drop — we'll DM you on Instagram to arrange a pickup time.",
+};
 
 const POLL_INTERVAL_MS = 2000;
 const MAX_POLLS = 10;
@@ -57,7 +72,7 @@ export default function OrderStatus() {
             clear();
             clearedRef.current = true;
           }
-          setState({ kind: "paid", orderId });
+          setState({ kind: "paid", orderId, shippingMethod: result.shippingMethod });
           return;
         }
       } catch {
@@ -115,9 +130,7 @@ export default function OrderStatus() {
                   <Check className="h-7 w-7" strokeWidth={3} />
                 </span>
                 <p className="mt-4 font-display text-xl font-bold text-ink-900">Payment confirmed!</p>
-                <p className="mt-1 text-sm text-ink-500">
-                  Thanks for shopping the drop — we'll DM or email you shipping details shortly.
-                </p>
+                <p className="mt-1 text-sm text-ink-500">{PAID_MESSAGE[state.shippingMethod]}</p>
                 <p className="mt-3 font-mono text-[10px] font-bold uppercase tracking-[0.18em] text-ink-400">
                   Order #{state.orderId.slice(0, 8)}
                 </p>

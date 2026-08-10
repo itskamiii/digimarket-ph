@@ -15,6 +15,7 @@ export async function GET(request: Request) {
     return Response.json({
       status: order.status,
       fulfillmentMethod: order.fulfillment_method,
+      shippingMethod: order.shipping_method,
       totalPhp: order.total_php,
     });
   } catch (err) {
