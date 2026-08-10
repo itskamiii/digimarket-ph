@@ -1,6 +1,15 @@
-import type { ShippingAddress } from "./types.js";
+import type { ShippingAddress, ShippingMethod } from "./types.js";
 
 const peso = (n: number) => "₱" + n.toLocaleString("en-PH");
+
+// What the owner needs to actually do for a "cod" (not paid through PayMongo) order —
+// the three couriers all skip payment automation for this path, but the follow-up action
+// differs per courier.
+const COD_PATH_ACTION: Record<ShippingMethod, string> = {
+  lbc: "Standard LBC COD — courier collects cash on delivery, nothing further to arrange.",
+  lalamove: "Book the Lalamove delivery yourself once you've arranged the fund transfer with the customer.",
+  dhl: "Message the customer on Instagram to arrange payment and quote DHL shipping for their destination.",
+};
 
 // Reuses the same Formspree form as the waitlist signup — it's already wired to the
 // owner's inbox. Never throws: a notification hiccup must never block a real order.
@@ -31,6 +40,7 @@ export async function notifyNewOrder(params: {
   customerPhone: string;
   shippingAddress: ShippingAddress;
   fulfillmentMethod: "online" | "cod";
+  shippingMethod: ShippingMethod;
   items: { name: string; price: number; quantity: number }[];
   totalPhp: number;
 }): Promise<void> {
@@ -42,7 +52,7 @@ export async function notifyNewOrder(params: {
 
   await sendToFormspree(
     {
-      _subject: `New ${params.fulfillmentMethod === "cod" ? "COD" : "paid online"} order — ${peso(params.totalPhp)}`,
+      _subject: `New ${params.fulfillmentMethod === "cod" ? "manual-pay" : "paid online"} order (${params.shippingMethod}) — ${peso(params.totalPhp)}`,
       _replyto: params.customerEmail,
       orderId: params.orderId,
       customerName: params.customerName,
@@ -50,8 +60,10 @@ export async function notifyNewOrder(params: {
       customerPhone: params.customerPhone,
       shippingAddress: shippingLine,
       fulfillmentMethod: params.fulfillmentMethod,
+      shippingMethod: params.shippingMethod,
       items: itemsLine,
       total: peso(params.totalPhp),
+      ...(params.fulfillmentMethod === "cod" ? { actionNeeded: COD_PATH_ACTION[params.shippingMethod] } : {}),
     },
     "new-order notification"
   );

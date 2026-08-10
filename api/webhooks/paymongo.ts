@@ -87,6 +87,7 @@ export async function POST(request: Request) {
         customerPhone: order.customer_phone,
         shippingAddress: order.shipping_address,
         fulfillmentMethod: "online",
+        shippingMethod: order.shipping_method,
         items: orderItems.map((i) => ({ name: i.name_snapshot, price: i.price_php_snapshot, quantity: i.quantity })),
         totalPhp: order.total_php,
       });

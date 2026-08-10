@@ -70,16 +70,12 @@ export async function POST(request: Request) {
   }
 
   const shippingMethod = body.shippingMethod ?? "lbc";
-  if (shippingMethod !== "lbc" && shippingMethod !== "lalamove") {
-    // "dhl" is a real value at the type/schema level, but checkout doesn't offer it yet.
+  if (shippingMethod !== "lbc" && shippingMethod !== "lalamove" && shippingMethod !== "dhl") {
     return Response.json({ error: "invalid_shipping_method" }, { status: 400 });
   }
   if (shippingMethod === "lalamove") {
-    // Lalamove is prepay-only (no COD) and NCR-only — matches the FAQ copy and the
-    // courier's own real coverage area.
-    if (body.fulfillmentMethod !== "online") {
-      return Response.json({ error: "lalamove_requires_online_payment" }, { status: 400 });
-    }
+    // Lalamove is NCR-only regardless of payment path — "online" prepays the delivery fee
+    // through PayMongo, "cod" means fund-transfer arranged directly at delivery instead.
     if (body.shipping.province !== "Metro Manila") {
       return Response.json({ error: "lalamove_ncr_only" }, { status: 400 });
     }
@@ -128,7 +124,9 @@ export async function POST(request: Request) {
   const subtotalPhp = orderItems.reduce((sum, item) => sum + item.price * item.quantity, 0);
 
   // Never trust a client-submitted fee (that quote came from api/checkout/lalamove-quote
-  // and may be minutes stale) — re-quote here so shippingFeePhp is authoritative.
+  // and may be minutes stale) — re-quote here so shippingFeePhp is authoritative. Needed
+  // for both Lalamove payment paths: charged through PayMongo when "online", or just
+  // shown as the fund-transfer amount to prepare when "cod".
   let shippingFeePhp = 0;
   if (shippingMethod === "lalamove") {
     try {
@@ -142,7 +140,14 @@ export async function POST(request: Request) {
       console.error("POST /api/checkout: Lalamove quotation failed", err);
       return Response.json({ error: "lalamove_unavailable" }, { status: 502 });
     }
+  } else if (shippingMethod === "lbc" && body.fulfillmentMethod === "cod") {
+    // COD handling surcharge the courier collects alongside the cash payment — never
+    // charged through the site. Whole ₱500 bands only; a partial band doesn't count
+    // (₱2,100 → floor(2100/500)=4 bands → ₱20, not 5 bands/₱25).
+    shippingFeePhp = Math.floor(subtotalPhp / 500) * 5;
   }
+  // "dhl" always stays 0 here — no live rate API yet, shipping cost is quoted and
+  // collected separately via DM regardless of which payment option was chosen.
 
   const order = await insertOrder({
     customerName: customer.name.trim(),
@@ -182,8 +187,9 @@ export async function POST(request: Request) {
         customerPhone: customer.phone.trim(),
         shippingAddress: body.shipping,
         fulfillmentMethod: "cod",
+        shippingMethod,
         items: orderItems.map((i) => ({ name: i.name, price: i.price, quantity: i.quantity })),
-        totalPhp: subtotalPhp,
+        totalPhp: order.total_php,
       });
       return Response.json({ orderId: order.id, redirect: null });
     }

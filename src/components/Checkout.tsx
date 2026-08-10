@@ -17,8 +17,7 @@ const ERROR_MESSAGES: Record<string, string> = {
   invalid_shipping: "Please fill in a complete shipping address.",
   invalid_fulfillment_method: "Please choose how you'd like to pay.",
   invalid_shipping_method: "Please choose a shipping option.",
-  lalamove_requires_online_payment: "Lalamove needs to be paid online — switch to online payment or choose LBC.",
-  lalamove_ncr_only: "Lalamove is only available within Metro Manila — choose LBC for other provinces.",
+  lalamove_ncr_only: "Lalamove is only available within Metro Manila — choose LBC or DHL for other provinces.",
   invalid_dropoff_pin: "Please drop a pin at your exact delivery location.",
   lalamove_unavailable: "Couldn't reach Lalamove for a delivery quote — please try again, or choose LBC.",
   empty_cart: "Your bag is empty.",
@@ -27,6 +26,36 @@ const ERROR_MESSAGES: Record<string, string> = {
 function friendlyError(message: string): string {
   return ERROR_MESSAGES[message] ?? "Something went wrong on our end — please try again.";
 }
+
+type ShippingMethod = "lbc" | "lalamove" | "dhl";
+
+// The COD-style second payment option is courier-specific in both label and mechanics:
+// all three skip PayMongo and become a committed order the moment it's submitted (same
+// indefinite-hold behavior), but only LBC's carries a real handling-fee surcharge.
+function secondPaymentOption(shippingMethod: ShippingMethod, codSurchargePhp: number): { label: string; hint: string } {
+  if (shippingMethod === "lalamove") {
+    return { label: "Fund transfer upon delivery", hint: "Pay via GCash/bank transfer when it arrives" };
+  }
+  if (shippingMethod === "dhl") {
+    return { label: "Other payment options", hint: "Coordinate via chat/DM" };
+  }
+  return {
+    label: "Cash on Delivery",
+    hint: codSurchargePhp > 0 ? `+${formatPeso(codSurchargePhp)} COD handling fee` : "+₱5 per ₱500 COD handling fee",
+  };
+}
+
+const COURIER_HINTS: Record<ShippingMethod, string> = {
+  lbc: "Nationwide, 1–7 days",
+  lalamove: "Same-day, NCR only",
+  dhl: "Worldwide",
+};
+
+const CONFIRMATION_TEXT: Record<ShippingMethod, string> = {
+  lbc: "We've reserved your unit(s). Pay the courier on delivery. We'll DM/email you shipping details shortly.",
+  lalamove: "We've reserved your unit(s). We'll message you on Instagram to arrange the Lalamove booking and fund transfer.",
+  dhl: "We've reserved your unit(s). We'll message you on Instagram to arrange payment and worldwide shipping via DHL.",
+};
 
 export default function Checkout({ open, onClose }: { open: boolean; onClose: () => void }) {
   const { items, subtotal, pruneItems, clear } = useCart();
@@ -40,20 +69,24 @@ export default function Checkout({ open, onClose }: { open: boolean; onClose: ()
   const [province, setProvince] = useState("");
   const [postalCode, setPostalCode] = useState("");
   const [fulfillmentMethod, setFulfillmentMethod] = useState<"online" | "cod">("online");
-  const [shippingMethod, setShippingMethod] = useState<"lbc" | "lalamove">("lbc");
+  const [shippingMethod, setShippingMethod] = useState<ShippingMethod>("lbc");
   const [dropoffPin, setDropoffPin] = useState<{ lat: number; lng: number } | null>(null);
   const [lalamoveFeePhp, setLalamoveFeePhp] = useState<number | null>(null);
   const [lalamoveQuoteLoading, setLalamoveQuoteLoading] = useState(false);
   const [lalamoveQuoteError, setLalamoveQuoteError] = useState<string | null>(null);
 
-  // Lalamove is prepay-only (no COD) and NCR-only — falls back to LBC the moment either
-  // condition stops holding, e.g. the customer switches to COD or picks a non-NCR city.
+  // Courier is chosen before the address, so eligibility can only be checked once the
+  // customer has typed a province — surfaced as an inline warning (below) rather than
+  // silently switching their chosen courier out from under them.
   const isMetroManila = province === "Metro Manila";
-  useEffect(() => {
-    if (shippingMethod === "lalamove" && (!isMetroManila || fulfillmentMethod !== "online")) {
-      setShippingMethod("lbc");
-    }
-  }, [isMetroManila, fulfillmentMethod, shippingMethod]);
+  const lalamoveIneligible = shippingMethod === "lalamove" && province !== "" && !isMetroManila;
+
+  // Preview value (always computed for LBC, regardless of which payment option is
+  // currently selected) drives the RadioCard hint so the customer sees the real fee
+  // before choosing COD; the applied value only counts once COD is actually selected.
+  const lbcCodSurchargePreviewPhp = shippingMethod === "lbc" ? Math.floor(subtotal / 500) * 5 : 0;
+  const codSurchargePhp = fulfillmentMethod === "cod" ? lbcCodSurchargePreviewPhp : 0;
+  const shippingFeePhp = shippingMethod === "lalamove" ? (lalamoveFeePhp ?? 0) : codSurchargePhp;
 
   // Fee depends only on the dropped pin, not the typed address text, so this only
   // re-fires when the pin actually moves — not on every keystroke elsewhere in the form.
@@ -114,9 +147,15 @@ export default function Checkout({ open, onClose }: { open: boolean; onClose: ()
   const onSubmit = async (e: FormEvent) => {
     e.preventDefault();
     if (items.length === 0 || submitting) return;
-    if (shippingMethod === "lalamove" && !dropoffPin) {
-      setError("Please drop a pin at your exact delivery location.");
-      return;
+    if (shippingMethod === "lalamove") {
+      if (lalamoveIneligible) {
+        setError("Lalamove is only available within Metro Manila — please choose LBC or DHL instead.");
+        return;
+      }
+      if (!dropoffPin) {
+        setError("Please drop a pin at your exact delivery location.");
+        return;
+      }
     }
     setSubmitting(true);
     setError(null);
@@ -199,10 +238,7 @@ export default function Checkout({ open, onClose }: { open: boolean; onClose: ()
                   <ShoppingBag className="h-6 w-6" />
                 </span>
                 <p className="font-display text-xl font-bold text-ink-900">Order confirmed!</p>
-                <p className="max-w-xs text-sm text-ink-500">
-                  We've reserved your unit(s). Pay the courier on delivery. We'll DM/email you shipping details
-                  shortly.
-                </p>
+                <p className="max-w-xs text-sm text-ink-500">{CONFIRMATION_TEXT[shippingMethod]}</p>
                 <p className="font-mono text-[10px] font-bold uppercase tracking-[0.18em] text-ink-400">
                   Order #{codConfirmedOrderId.slice(0, 8)}
                 </p>
@@ -250,13 +286,66 @@ export default function Checkout({ open, onClose }: { open: boolean; onClose: ()
                           </span>
                         </div>
                       )}
+                      {codSurchargePhp > 0 && (
+                        <div className="mt-1.5 flex items-center justify-between">
+                          <span className="text-sm text-ink-500">COD handling fee</span>
+                          <span className="text-sm font-semibold text-ink-900">{formatPeso(codSurchargePhp)}</span>
+                        </div>
+                      )}
                       <div className="mt-1.5 flex items-center justify-between">
                         <span className="text-sm font-semibold text-ink-900">Total</span>
                         <span className="font-display text-lg font-bold text-ink-900">
-                          {formatPeso(subtotal + (shippingMethod === "lalamove" ? (lalamoveFeePhp ?? 0) : 0))}
+                          {formatPeso(subtotal + shippingFeePhp)}
                         </span>
                       </div>
                     </div>
+
+                    <div>
+                      <p className="mb-2 text-xs font-bold uppercase tracking-[0.14em] text-ink-400">
+                        Choose a courier
+                      </p>
+                      <div className="grid gap-2 sm:grid-cols-3">
+                        {(["lbc", "lalamove", "dhl"] as const).map((method) => (
+                          <RadioCard
+                            key={method}
+                            label={method === "lbc" ? "LBC" : method === "lalamove" ? "Lalamove" : "DHL"}
+                            hint={COURIER_HINTS[method]}
+                            checked={shippingMethod === method}
+                            onSelect={() => setShippingMethod(method)}
+                          />
+                        ))}
+                      </div>
+                    </div>
+
+                    <div>
+                      <p className="mb-2 text-xs font-bold uppercase tracking-[0.14em] text-ink-400">
+                        How would you like to pay?
+                      </p>
+                      <div className="grid gap-2 sm:grid-cols-2">
+                        <RadioCard
+                          label="Pay online now"
+                          hint="Via QR (QRPh)"
+                          checked={fulfillmentMethod === "online"}
+                          onSelect={() => setFulfillmentMethod("online")}
+                        />
+                        <RadioCard
+                          label={secondPaymentOption(shippingMethod, lbcCodSurchargePreviewPhp).label}
+                          hint={secondPaymentOption(shippingMethod, lbcCodSurchargePreviewPhp).hint}
+                          checked={fulfillmentMethod === "cod"}
+                          onSelect={() => setFulfillmentMethod("cod")}
+                        />
+                      </div>
+                    </div>
+
+                    {shippingMethod === "lalamove" && (
+                      <div className="flex flex-col gap-2">
+                        <p className="text-xs text-ink-500">
+                          Drop a pin at your exact delivery location — tap the map, or drag the pin once it's placed.
+                        </p>
+                        <LalamovePinPicker value={dropoffPin} onChange={setDropoffPin} />
+                        {lalamoveQuoteError && <p className="text-xs text-flash-600">{lalamoveQuoteError}</p>}
+                      </div>
+                    )}
 
                     <div className="grid gap-3 sm:grid-cols-2">
                       <Field
@@ -328,56 +417,10 @@ export default function Checkout({ open, onClose }: { open: boolean; onClose: ()
                       />
                     </div>
 
-                    <div>
-                      <p className="mb-2 text-xs font-bold uppercase tracking-[0.14em] text-ink-400">
-                        How would you like to pay?
-                      </p>
-                      <div className="grid gap-2 sm:grid-cols-2">
-                        <RadioCard
-                          label="Pay online now"
-                          hint="Via QR (QRPh)"
-                          checked={fulfillmentMethod === "online"}
-                          onSelect={() => setFulfillmentMethod("online")}
-                        />
-                        <RadioCard
-                          label="Cash on Delivery"
-                          hint="Shipped via LBC"
-                          checked={fulfillmentMethod === "cod"}
-                          onSelect={() => setFulfillmentMethod("cod")}
-                        />
-                      </div>
-                    </div>
-
-                    {isMetroManila && fulfillmentMethod === "online" && (
-                      <div>
-                        <p className="mb-2 text-xs font-bold uppercase tracking-[0.14em] text-ink-400">
-                          How should it ship?
-                        </p>
-                        <div className="grid gap-2 sm:grid-cols-2">
-                          <RadioCard
-                            label="LBC"
-                            hint="NCR in 1 day, elsewhere 1–7 days"
-                            checked={shippingMethod === "lbc"}
-                            onSelect={() => setShippingMethod("lbc")}
-                          />
-                          <RadioCard
-                            label="Lalamove"
-                            hint="Same-day, NCR only"
-                            checked={shippingMethod === "lalamove"}
-                            onSelect={() => setShippingMethod("lalamove")}
-                          />
-                        </div>
-                        {shippingMethod === "lalamove" && (
-                          <div className="mt-3 flex flex-col gap-2">
-                            <p className="text-xs text-ink-500">
-                              Drop a pin at your exact delivery location — tap the map, or drag the pin once it's placed.
-                            </p>
-                            <LalamovePinPicker value={dropoffPin} onChange={setDropoffPin} />
-                            {lalamoveQuoteError && (
-                              <p className="text-xs text-flash-600">{lalamoveQuoteError}</p>
-                            )}
-                          </div>
-                        )}
+                    {lalamoveIneligible && (
+                      <div className="flex items-start gap-2 rounded-2xl bg-flash-500/10 px-4 py-3 text-sm text-flash-600">
+                        <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
+                        <p>Lalamove is only available within Metro Manila — please choose LBC or DHL instead.</p>
                       </div>
                     )}
 
@@ -391,7 +434,9 @@ export default function Checkout({ open, onClose }: { open: boolean; onClose: ()
                     <button
                       type="submit"
                       disabled={
-                        submitting || (shippingMethod === "lalamove" && (!dropoffPin || lalamoveQuoteLoading))
+                        submitting ||
+                        lalamoveIneligible ||
+                        (shippingMethod === "lalamove" && (!dropoffPin || lalamoveQuoteLoading))
                       }
                       className="btn-shine flex items-center justify-center gap-2 rounded-full bg-flash-500 px-6 py-4 text-sm font-semibold text-cream-50 shadow-xl shadow-flash-500/35 transition-all duration-300 hover:-translate-y-0.5 hover:bg-flash-600 disabled:pointer-events-none disabled:opacity-60"
                     >
