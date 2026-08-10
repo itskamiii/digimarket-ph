@@ -2,15 +2,30 @@ import type { ShippingAddress, ShippingMethod } from "./types.js";
 
 const peso = (n: number) => "₱" + n.toLocaleString("en-PH");
 
-// What the owner needs to actually do for a "cod" (not paid through PayMongo) order —
-// every method skips payment automation for this path, but the follow-up action differs.
-const COD_PATH_ACTION: Record<ShippingMethod, string> = {
-  lbc: "Standard LBC COD — courier collects cash on delivery, nothing further to arrange.",
-  lalamove: "Book the Lalamove delivery yourself once you've arranged the fund transfer with the customer.",
-  dhl: "Message the customer on Instagram to arrange payment and quote DHL shipping for their destination.",
-  meetup: "Message the customer on Instagram to set the meet-up time and place — cash or fund transfer plus the meet-up fee on the day.",
-  pickup: "Message the customer on Instagram to arrange a pickup time — cash or fund transfer on the day, no extra fee.",
-};
+// What the owner still needs to do by hand for this order. LBC needs nothing special
+// either way (COD is standard courier procedure; online has nothing left to arrange) —
+// everything else needs manual follow-up regardless of payment path, since Lalamove
+// booking and DHL rate-quoting are never automated, and Meet up/Pick up are always
+// arranged fresh over DM.
+function actionNeeded(shippingMethod: ShippingMethod, fulfillmentMethod: "online" | "cod"): string | null {
+  if (shippingMethod === "lalamove") {
+    return fulfillmentMethod === "online"
+      ? "Item is paid — book the Lalamove delivery yourself using the dropoff pin on this order."
+      : "Arrange the fund transfer with the customer, then book the Lalamove delivery yourself using the dropoff pin on this order.";
+  }
+  if (shippingMethod === "dhl") {
+    return fulfillmentMethod === "online"
+      ? "Item is paid — message the customer on Instagram to get their destination and quote the DHL shipping rate."
+      : "Message the customer on Instagram to arrange payment and quote DHL shipping for their destination.";
+  }
+  if (shippingMethod === "meetup") {
+    return "Message the customer on Instagram to set the meet-up time and place — cash or fund transfer plus the meet-up fee on the day.";
+  }
+  if (shippingMethod === "pickup") {
+    return "Message the customer on Instagram to arrange a pickup time — cash or fund transfer on the day, no extra fee.";
+  }
+  return null;
+}
 
 // Reuses the same Formspree form as the waitlist signup — it's already wired to the
 // owner's inbox. Never throws: a notification hiccup must never block a real order.
@@ -50,6 +65,7 @@ export async function notifyNewOrder(params: {
     .filter(Boolean)
     .join(", ");
   const itemsLine = params.items.map((i) => `${i.quantity}x ${i.name} (${peso(i.price)})`).join("; ");
+  const action = actionNeeded(params.shippingMethod, params.fulfillmentMethod);
 
   await sendToFormspree(
     {
@@ -64,7 +80,7 @@ export async function notifyNewOrder(params: {
       shippingMethod: params.shippingMethod,
       items: itemsLine,
       total: peso(params.totalPhp),
-      ...(params.fulfillmentMethod === "cod" ? { actionNeeded: COD_PATH_ACTION[params.shippingMethod] } : {}),
+      ...(action ? { actionNeeded: action } : {}),
     },
     "new-order notification"
   );
@@ -89,23 +105,5 @@ export async function notifyPaymentOnDeadOrder(params: {
       note: "PayMongo confirmed a payment for an order that is no longer pending — check whether the unit is still available for this customer, or if a refund is needed.",
     },
     "dead-order payment alert"
-  );
-}
-
-// Payment succeeded but the automatic Lalamove booking call failed (API down, sandbox
-// misconfigured, etc.) — the order is genuinely paid, so this always needs a human to
-// book the delivery manually rather than leaving the customer's camera unshipped.
-export async function notifyLalamoveBookingFailed(params: {
-  orderId: string;
-  errorMessage: string;
-}): Promise<void> {
-  await sendToFormspree(
-    {
-      _subject: `⚠️ Action needed — Lalamove booking failed for a paid order`,
-      orderId: params.orderId,
-      error: params.errorMessage,
-      note: "Payment already succeeded for this order, but booking the Lalamove delivery failed automatically. Book it manually via the Lalamove app/website using this order's shipping address.",
-    },
-    "lalamove-booking-failed alert"
   );
 }

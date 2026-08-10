@@ -1,13 +1,11 @@
 import {
-  attachLalamoveOrder,
   getOrderByCheckoutSessionId,
   getOrderById,
   getOrderItemsByOrderId,
   markOrderPaid,
   markUnitsSold,
 } from "../../server/db.js";
-import { bookLalamoveDelivery, formatDropoffAddress } from "../../server/lalamove.js";
-import { notifyLalamoveBookingFailed, notifyNewOrder, notifyPaymentOnDeadOrder } from "../../server/notify.js";
+import { notifyNewOrder, notifyPaymentOnDeadOrder } from "../../server/notify.js";
 import { verifyPaymongoSignature } from "../../server/paymongo.js";
 
 // PayMongo's webhook envelope: { data: { attributes: { type: "<event>", data: <resource> } } }.
@@ -91,32 +89,9 @@ export async function POST(request: Request) {
         items: orderItems.map((i) => ({ name: i.name_snapshot, price: i.price_php_snapshot, quantity: i.quantity })),
         totalPhp: order.total_php,
       });
-
-      if (order.shipping_method === "lalamove" && order.dropoff_lat != null && order.dropoff_lng != null) {
-        try {
-          const booking = await bookLalamoveDelivery({
-            orderId: order.id,
-            dropoff: {
-              lat: order.dropoff_lat,
-              lng: order.dropoff_lng,
-              address: formatDropoffAddress(order.shipping_address),
-            },
-            recipientName: order.customer_name,
-            recipientPhone: order.customer_phone,
-          });
-          await attachLalamoveOrder(order.id, booking.orderId, booking.shareLink, booking.status);
-        } catch (err) {
-          // The sale itself already succeeded (payment confirmed, unit marked sold) — a
-          // failed booking call must never surface as a failed webhook, since PayMongo
-          // retrying this event would just re-attempt a no-op markOrderPaid. A human
-          // needs to book the delivery manually instead.
-          console.error("PayMongo webhook: Lalamove booking failed for a paid order", { orderId: order.id, err });
-          await notifyLalamoveBookingFailed({
-            orderId: order.id,
-            errorMessage: err instanceof Error ? err.message : String(err),
-          });
-        }
-      }
+      // No automatic Lalamove booking here — for a paid-online Lalamove order, the owner
+      // books the actual delivery manually on their phone using the dropoff pin already
+      // on the order (order.dropoff_lat/dropoff_lng).
     } else if (order.status !== "paid") {
       // `order` was fetched before markOrderPaid ran, so its status here reflects what
       // the order was BEFORE this webhook — not "paid" means it was already dead

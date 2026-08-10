@@ -116,7 +116,7 @@ export default function CartDrawer({ onCheckout }: { onCheckout: () => void }) {
                   <span className="text-ink-500">Subtotal</span>
                   <span className="font-display text-lg font-bold text-ink-900">{formatPeso(subtotal)}</span>
                 </div>
-                <p className="mt-1 text-xs text-ink-400">Shipping fee is COD, paid to the courier on delivery.</p>
+                <p className="mt-1 text-xs text-ink-400">Courier and payment options — including any delivery fee — are shown at checkout.</p>
                 <button
                   type="button"
                   onClick={onCheckout}

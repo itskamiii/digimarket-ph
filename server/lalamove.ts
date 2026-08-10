@@ -1,11 +1,5 @@
-import { createHmac, randomUUID, timingSafeEqual } from "node:crypto";
-import type { LatLng, ShippingAddress } from "./types.js";
-
-export function formatDropoffAddress(shipping: ShippingAddress): string {
-  return [shipping.line1, shipping.line2, shipping.city, shipping.province, shipping.postalCode]
-    .filter(Boolean)
-    .join(", ");
-}
+import { randomUUID, createHmac } from "node:crypto";
+import type { LatLng } from "./types.js";
 
 // Sandbox until LALAMOVE_ENV=production is set — matches the sk_test/sk_live split
 // already used for PayMongo, just via an explicit env var since Lalamove's sandbox and
@@ -69,14 +63,11 @@ const PICKUP_POINT = {
   address: process.env.LALAMOVE_PICKUP_ADDRESS ?? "Manila, Philippines",
 };
 
-const SENDER = {
-  name: process.env.LALAMOVE_SENDER_NAME ?? "Digimarket_PH",
-  phone: process.env.LALAMOVE_SENDER_PHONE ?? "",
-};
-
-// serviceType "MOTORCYCLE" is PH's smallest/cheapest tier — fine for a camera-sized
-// parcel. Confirm this is still a valid PH service type via GET /v3/cities if Lalamove
-// ever rejects it; their per-market service list can change.
+// Informational only — the checkout flow never books through this API or charges this
+// fee. The owner always books the actual Lalamove delivery manually on their phone once
+// they've settled the fee with the customer via DM; this quote just gives the customer a
+// live estimate to plan around. serviceType "MOTORCYCLE" is PH's smallest/cheapest tier —
+// fine for a camera-sized parcel.
 export async function getQuotation(dropoff: LatLng & { address: string }): Promise<LalamoveQuotation> {
   type QuotationResponse = {
     data: {
@@ -104,65 +95,4 @@ export async function getQuotation(dropoff: LatLng & { address: string }): Promi
     senderStopId: res.data.stops[0].stopId,
     recipientStopId: res.data.stops[1].stopId,
   };
-}
-
-export type LalamovePlacedOrder = {
-  orderId: string;
-  shareLink: string | null;
-  status: string;
-};
-
-export async function placeOrder(params: {
-  quotation: LalamoveQuotation;
-  senderName: string;
-  senderPhone: string;
-  recipientName: string;
-  recipientPhone: string;
-  orderId: string; // our own order id, passed through as metadata for the webhook to match back
-}): Promise<LalamovePlacedOrder> {
-  type OrderResponse = { data: { orderId: string; shareLink?: string; status: string } };
-  const res = await lalamoveRequest<OrderResponse>("POST", "/orders", {
-    data: {
-      quotationId: params.quotation.quotationId,
-      sender: { stopId: params.quotation.senderStopId, name: params.senderName, phone: params.senderPhone },
-      recipients: [
-        { stopId: params.quotation.recipientStopId, name: params.recipientName, phone: params.recipientPhone },
-      ],
-      metadata: { order_id: params.orderId },
-    },
-  });
-  return { orderId: res.data.orderId, shareLink: res.data.shareLink ?? null, status: res.data.status };
-}
-
-// Single entrypoint for the post-payment booking step: always re-quotes right before
-// booking, since any quotation shown earlier (the live checkout preview, or the one
-// fetched at order-creation time) is long expired by the time a payment webhook lands.
-export async function bookLalamoveDelivery(params: {
-  orderId: string;
-  dropoff: LatLng & { address: string };
-  recipientName: string;
-  recipientPhone: string;
-}): Promise<LalamovePlacedOrder> {
-  const quotation = await getQuotation(params.dropoff);
-  return placeOrder({
-    quotation,
-    senderName: SENDER.name,
-    senderPhone: SENDER.phone,
-    recipientName: params.recipientName,
-    recipientPhone: params.recipientPhone,
-    orderId: params.orderId,
-  });
-}
-
-// Same HMAC-SHA256 mechanism the REST API itself uses, per Lalamove's docs — but the
-// exact webhook header name/format is unconfirmed against a real delivery, same caveat
-// as PayMongo's payment_method_used field: verify once real webhooks are flowing and
-// adjust if Lalamove's dashboard shows a different header.
-export function verifyLalamoveWebhookSignature(rawBody: string, signatureHeader: string | null): boolean {
-  const { secret } = credentials();
-  if (!signatureHeader) return false;
-  const expected = createHmac("sha256", secret).update(rawBody).digest("hex");
-  const expectedBuf = Buffer.from(expected, "hex");
-  const candidateBuf = Buffer.from(signatureHeader, "hex");
-  return candidateBuf.length === expectedBuf.length && timingSafeEqual(expectedBuf, candidateBuf);
 }

@@ -13,15 +13,14 @@ type ViewState =
   | { kind: "pending"; orderId: string } // PayMongo accepted the payment but our webhook hasn't landed yet
   | { kind: "cancelled" };
 
-// Booking is automatic for a paid-online Lalamove order (the PayMongo webhook books the
-// rider right away), so this is about delivery-day coordination, not settling payment —
-// unlike the "fund transfer upon delivery" path in Checkout.tsx, which still owes money.
-// "meetup"/"pickup" can never reach this screen in practice (they always require
-// fulfillmentMethod "cod", so checkout never redirects to PayMongo for them), but the
-// map is typed over the full ShippingMethod union for exhaustiveness.
+// Item is paid at this point either way — Lalamove/DHL delivery still gets arranged
+// manually afterward (no automatic booking or rate quoting for either). "meetup"/"pickup"
+// can never reach this screen in practice (they always require fulfillmentMethod "cod",
+// so checkout never redirects to PayMongo for them), but the map is typed over the full
+// ShippingMethod union for exhaustiveness.
 const PAID_MESSAGE: Record<ShippingMethod, string> = {
   lbc: "Thanks for shopping the drop — we'll DM or email you shipping details shortly.",
-  lalamove: "Thanks for shopping the drop — we'll DM you on Instagram once your Lalamove rider is on the way.",
+  lalamove: "Thanks for shopping the drop — we'll DM you on Instagram to arrange your Lalamove delivery.",
   dhl: "Thanks for shopping the drop — we'll DM you on Instagram to arrange your DHL shipment.",
   meetup: "Thanks for shopping the drop — we'll DM you on Instagram to set the meet-up time and place.",
   pickup: "Thanks for shopping the drop — we'll DM you on Instagram to arrange a pickup time.",

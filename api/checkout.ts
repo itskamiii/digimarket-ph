@@ -9,7 +9,6 @@ import {
   reserveUnits,
   type NewOrderItemInput,
 } from "../server/db.js";
-import { formatDropoffAddress, getQuotation } from "../server/lalamove.js";
 import { notifyNewOrder } from "../server/notify.js";
 import { createCheckoutSession, type CheckoutLineItem } from "../server/paymongo.js";
 import { allowCheckoutAttempt, getClientIp } from "../server/rateLimit.js";
@@ -74,8 +73,9 @@ export async function POST(request: Request) {
     return Response.json({ error: "invalid_shipping_method" }, { status: 400 });
   }
   if (shippingMethod === "lalamove") {
-    // Lalamove is NCR-only regardless of payment path — "online" prepays the delivery fee
-    // through PayMongo, "cod" means fund-transfer arranged directly at delivery instead.
+    // Lalamove is NCR-only regardless of payment path. The delivery fee itself is never
+    // charged through the site either way — always settled via DM, booked manually on
+    // the owner's phone — "online" only ever prepays the item.
     if (body.shipping.province !== "Metro Manila") {
       return Response.json({ error: "lalamove_ncr_only" }, { status: 400 });
     }
@@ -128,33 +128,16 @@ export async function POST(request: Request) {
   ];
   const subtotalPhp = orderItems.reduce((sum, item) => sum + item.price * item.quantity, 0);
 
-  // Never trust a client-submitted fee (that quote came from api/checkout/lalamove-quote
-  // and may be minutes stale) — re-quote here so shippingFeePhp is authoritative. Only
-  // needed when actually charging it through PayMongo ("online"); the "cod" path (fund
-  // transfer upon delivery) skips PayMongo entirely and settles the final fee via DM —
-  // same "we don't bake an estimate into the order record" treatment as LBC below —
-  // so there's no reason to depend on a live Lalamove API call for that path at all.
+  // Lalamove's actual delivery fee is never charged through the site regardless of
+  // payment path — always settled via DM, booked manually on the owner's phone. "lbc"
+  // and "dhl" stay 0 for the same reason (weight/distance-dependent, relayed via DM).
+  // "pickup" genuinely has no fee. Only "meetup" contributes a real, known-upfront fee.
   let shippingFeePhp = 0;
-  if (shippingMethod === "lalamove" && body.fulfillmentMethod === "online") {
-    try {
-      const quotation = await getQuotation({
-        lat: body.dropoffPin!.lat,
-        lng: body.dropoffPin!.lng,
-        address: formatDropoffAddress(body.shipping),
-      });
-      shippingFeePhp = quotation.priceTotal;
-    } catch (err) {
-      console.error("POST /api/checkout: Lalamove quotation failed", err);
-      return Response.json({ error: "lalamove_unavailable" }, { status: 502 });
-    }
-  } else if (shippingMethod === "meetup") {
+  if (shippingMethod === "meetup") {
     // Flat meet-up fee, collected in person — cheaper within Rizal (where the business
     // is based, in Cainta) than further out. No fee at all for "pickup".
     shippingFeePhp = body.shipping.province === "Rizal" ? 250 : 300;
   }
-  // "lbc" and "dhl" always stay 0 here — LBC's actual shipping fee is weight/distance
-  // dependent and always relayed via DM, collected as COD; DHL has no live rate API yet
-  // either. "pickup" genuinely has no fee. Lalamove's "cod" path also stays 0 — see above.
 
   const order = await insertOrder({
     customerName: customer.name.trim(),
@@ -204,22 +187,18 @@ export async function POST(request: Request) {
     const siteUrl = process.env.SITE_URL;
     if (!siteUrl) throw new Error("SITE_URL is not set");
 
+    // No shipping/delivery fee is ever charged online — every courier's fee is either
+    // collected on delivery or settled via DM (see shippingFeePhp above). This block only
+    // runs for fulfillmentMethod "online", where shippingFeePhp is always 0.
     const session = await createCheckoutSession({
-      lineItems: [
-        ...orderItems.map(
-          (item): CheckoutLineItem => ({
-            name: item.name,
-            amount: item.price * 100,
-            currency: "PHP",
-            quantity: item.quantity,
-          })
-        ),
-        // LBC's fee is courier-collected on delivery, not charged here — only Lalamove
-        // (prepay-only, no COD option) needs its own line item.
-        ...(shippingFeePhp > 0
-          ? [{ name: "Lalamove delivery fee", amount: shippingFeePhp * 100, currency: "PHP", quantity: 1 } as CheckoutLineItem]
-          : []),
-      ],
+      lineItems: orderItems.map(
+        (item): CheckoutLineItem => ({
+          name: item.name,
+          amount: item.price * 100,
+          currency: "PHP",
+          quantity: item.quantity,
+        })
+      ),
       successUrl: `${siteUrl}/?order=${order.id}&status=success`,
       // Routed through a cleanup endpoint (not straight back to the site) so an explicit
       // cancel immediately frees the reserved units instead of waiting out the TTL —

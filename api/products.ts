@@ -16,28 +16,27 @@ function toCatalogItem(unit: UnitRow) {
   };
 }
 
-// "Others" is an intentional catch-all bucket and always sorts last; any other brand
-// not in PREFERRED_BRAND_ORDER falls in between, alphabetically. No tab to switch
-// brands anymore, but this keeps the flat Digicams list tidily clustered.
-const PREFERRED_BRAND_ORDER = ["Sony", "Nikon"];
-function brandRank(brand: string): number {
-  if (brand === "Others") return Number.MAX_SAFE_INTEGER;
-  const idx = PREFERRED_BRAND_ORDER.indexOf(brand);
-  return idx === -1 ? PREFERRED_BRAND_ORDER.length : idx;
+// Available units first (most expensive first, so the showcase leads with its best
+// stuff), then reserved, then sold last — those aren't purchasable, so they sink to the
+// bottom regardless of price.
+const STATUS_RANK: Record<UnitRow["status"], number> = { available: 0, reserved: 1, sold: 2 };
+function byStatusThenPriceDesc(a: UnitRow, b: UnitRow): number {
+  const statusDiff = STATUS_RANK[a.status] - STATUS_RANK[b.status];
+  return statusDiff !== 0 ? statusDiff : b.price_php - a.price_php;
 }
 
 export async function GET() {
   try {
     const { units, kits } = await getProducts();
 
-    const camcorders = units.filter((u) => u.category === "camcorder").map(toCatalogItem);
+    const camcorders = units
+      .filter((u) => u.category === "camcorder")
+      .sort(byStatusThenPriceDesc)
+      .map(toCatalogItem);
 
     const digicams = units
       .filter((u) => u.category === "digicam")
-      .sort((a, b) => {
-        const diff = brandRank(a.brand ?? "Others") - brandRank(b.brand ?? "Others");
-        return diff !== 0 ? diff : a.name.localeCompare(b.name);
-      })
+      .sort(byStatusThenPriceDesc)
       .map(toCatalogItem);
 
     const kitsPayload = kits.map((kit) => ({ id: kit.id, price: kit.price_php }));
