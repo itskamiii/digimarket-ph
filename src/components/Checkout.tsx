@@ -48,7 +48,7 @@ function secondPaymentOption(shippingMethod: ShippingMethod, codSurchargePhp: nu
 const COURIER_HINTS: Record<ShippingMethod, string> = {
   lbc: "Nationwide, 1–7 days",
   lalamove: "Same-day, NCR only",
-  dhl: "Worldwide",
+  dhl: "Outside the Philippines",
 };
 
 const CONFIRMATION_TEXT: Record<ShippingMethod, string> = {
