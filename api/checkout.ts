@@ -129,11 +129,13 @@ export async function POST(request: Request) {
   const subtotalPhp = orderItems.reduce((sum, item) => sum + item.price * item.quantity, 0);
 
   // Never trust a client-submitted fee (that quote came from api/checkout/lalamove-quote
-  // and may be minutes stale) — re-quote here so shippingFeePhp is authoritative. Needed
-  // for both Lalamove payment paths: charged through PayMongo when "online", or just
-  // shown as the fund-transfer amount to prepare when "cod".
+  // and may be minutes stale) — re-quote here so shippingFeePhp is authoritative. Only
+  // needed when actually charging it through PayMongo ("online"); the "cod" path (fund
+  // transfer upon delivery) skips PayMongo entirely and settles the final fee via DM —
+  // same "we don't bake an estimate into the order record" treatment as LBC below —
+  // so there's no reason to depend on a live Lalamove API call for that path at all.
   let shippingFeePhp = 0;
-  if (shippingMethod === "lalamove") {
+  if (shippingMethod === "lalamove" && body.fulfillmentMethod === "online") {
     try {
       const quotation = await getQuotation({
         lat: body.dropoffPin!.lat,
@@ -152,7 +154,7 @@ export async function POST(request: Request) {
   }
   // "lbc" and "dhl" always stay 0 here — LBC's actual shipping fee is weight/distance
   // dependent and always relayed via DM, collected as COD; DHL has no live rate API yet
-  // either. "pickup" genuinely has no fee.
+  // either. "pickup" genuinely has no fee. Lalamove's "cod" path also stays 0 — see above.
 
   const order = await insertOrder({
     customerName: customer.name.trim(),

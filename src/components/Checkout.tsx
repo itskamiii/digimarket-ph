@@ -42,7 +42,7 @@ const IN_PERSON_METHODS = new Set<ShippingMethod>(["meetup", "pickup"]);
 // relayed via DM, collected as COD on delivery.
 function secondPaymentOption(shippingMethod: ShippingMethod): { label: string; hint: string } {
   if (shippingMethod === "lalamove") {
-    return { label: "Fund transfer upon delivery", hint: "Pay via GCash/bank transfer when it arrives" };
+    return { label: "Fund transfer upon delivery", hint: "GCash/bank transfer — final SF via DM" };
   }
   if (shippingMethod === "dhl") {
     return { label: "Other payment options", hint: "Coordinate via chat/DM" };
@@ -114,10 +114,16 @@ export default function Checkout({ open, onClose }: { open: boolean; onClose: ()
   // further out — no fee at all for pickup.
   const meetupFeePhp = shippingMethod === "meetup" ? (province === "Rizal" ? 250 : 300) : 0;
   // LBC's actual shipping fee is never computed here (it's weight/distance-dependent and
-  // always relayed via DM, collected as COD) — only Lalamove and Meet up contribute a
-  // real number to the checkout total.
-  const shippingFeePhp =
-    shippingMethod === "lalamove" ? (lalamoveFeePhp ?? 0) : shippingMethod === "meetup" ? meetupFeePhp : 0;
+  // always relayed via DM, collected as COD). Lalamove's live quote only counts toward
+  // the total when it's actually being charged through PayMongo ("online") — the "fund
+  // transfer upon delivery" path gets the same "final SF via DM" treatment as LBC's COD,
+  // since that quote is just an estimate and the real booking happens later, manually.
+  const lalamoveFeeAppliesToTotal = shippingMethod === "lalamove" && fulfillmentMethod === "online";
+  const shippingFeePhp = lalamoveFeeAppliesToTotal
+    ? (lalamoveFeePhp ?? 0)
+    : shippingMethod === "meetup"
+      ? meetupFeePhp
+      : 0;
 
   // Fee depends only on the dropped pin, not the typed address text, so this only
   // re-fires when the pin actually moves — not on every keystroke elsewhere in the form.
@@ -307,13 +313,15 @@ export default function Checkout({ open, onClose }: { open: boolean; onClose: ()
                       </div>
                       {shippingMethod === "lalamove" && (
                         <div className="mt-1.5 flex items-center justify-between">
-                          <span className="text-sm text-ink-500">Lalamove delivery</span>
+                          <span className="text-sm text-ink-500">SF</span>
                           <span className="text-sm font-semibold text-ink-900">
-                            {lalamoveQuoteLoading
-                              ? "Getting quote…"
-                              : lalamoveFeePhp !== null
-                                ? formatPeso(lalamoveFeePhp)
-                                : "—"}
+                            {fulfillmentMethod === "cod"
+                              ? "Via DM"
+                              : lalamoveQuoteLoading
+                                ? "Getting quote…"
+                                : lalamoveFeePhp !== null
+                                  ? formatPeso(lalamoveFeePhp)
+                                  : "—"}
                           </span>
                         </div>
                       )}
@@ -391,6 +399,11 @@ export default function Checkout({ open, onClose }: { open: boolean; onClose: ()
                         </p>
                         <LalamovePinPicker value={dropoffPin} onChange={setDropoffPin} />
                         {lalamoveQuoteError && <p className="text-xs text-flash-600">{lalamoveQuoteError}</p>}
+                        {fulfillmentMethod === "cod" && lalamoveFeePhp !== null && (
+                          <p className="text-xs text-ink-400">
+                            Estimated delivery fee: {formatPeso(lalamoveFeePhp)} — final SF confirmed via DM.
+                          </p>
+                        )}
                       </div>
                     )}
 
