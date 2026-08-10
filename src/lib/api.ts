@@ -82,3 +82,39 @@ export async function fetchOrderStatus(orderId: string): Promise<OrderStatusResu
     throw new Error("Failed to load order status — the API didn't return valid data.");
   }
 }
+
+export type PayBalanceStatus = {
+  customerName: string;
+  items: { name: string; quantity: number }[];
+  downPaymentCleared: boolean;
+  balancePhp: number | null;
+  balanceDueAt: string | null;
+};
+
+export async function fetchPayBalanceStatus(orderId: string): Promise<PayBalanceStatus> {
+  const res = await fetch(`/api/pay-balance-status?orderId=${encodeURIComponent(orderId)}`);
+  const json = (await res.json().catch(() => ({}))) as { error?: string } & Partial<PayBalanceStatus>;
+  if (!res.ok || json.balancePhp === undefined) {
+    throw new Error(json.error ?? "Couldn't load this order — please try again.");
+  }
+  return {
+    customerName: json.customerName ?? "",
+    items: json.items ?? [],
+    downPaymentCleared: json.downPaymentCleared ?? false,
+    balancePhp: json.balancePhp ?? null,
+    balanceDueAt: json.balanceDueAt ?? null,
+  };
+}
+
+export async function createPayBalanceCheckout(orderId: string): Promise<{ redirect: string }> {
+  const res = await fetch("/api/checkout/pay-balance", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ orderId }),
+  });
+  const json = (await res.json().catch(() => ({}))) as { error?: string; redirect?: string };
+  if (!res.ok || !json.redirect) {
+    throw new Error(json.error ?? "Couldn't start payment — please try again.");
+  }
+  return { redirect: json.redirect };
+}

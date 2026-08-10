@@ -2,10 +2,11 @@ import {
   getOrderByCheckoutSessionId,
   getOrderById,
   getOrderItemsByOrderId,
+  markLayawayBalancePaid,
   markOrderPaid,
   markUnitsSold,
 } from "../../server/db.js";
-import { notifyNewOrder, notifyPaymentOnDeadOrder } from "../../server/notify.js";
+import { notifyLayawayBalancePaid, notifyNewOrder, notifyPaymentOnDeadOrder } from "../../server/notify.js";
 import { verifyPaymongoSignature } from "../../server/paymongo.js";
 
 // PayMongo's webhook envelope: { data: { attributes: { type: "<event>", data: <resource> } } }.
@@ -59,6 +60,7 @@ export async function POST(request: Request) {
 
   try {
     const orderId = resource?.attributes?.metadata?.order_id;
+    const purpose = resource?.attributes?.metadata?.purpose;
     const sessionId = resource?.id;
     const order = orderId
       ? await getOrderById(orderId)
@@ -69,6 +71,19 @@ export async function POST(request: Request) {
     if (!order) {
       console.error("PayMongo webhook: no matching order", { orderId, sessionId, eventType });
       return new Response("ok", { status: 200 }); // retrying won't make a missing order appear
+    }
+
+    if (purpose === "layaway_balance") {
+      // A second, separate charge against an order whose down payment already cleared
+      // (order.status is already "paid" from that first charge, so this needs its own
+      // branch entirely rather than falling into markOrderPaid below).
+      const newlyCleared = await markLayawayBalancePaid(order.id);
+      if (newlyCleared) {
+        await markUnitsSold(order.id);
+        await notifyLayawayBalancePaid({ orderId: order.id, customerName: order.customer_name });
+      }
+      // else: already cleared — safe no-op, PayMongo redelivered the event.
+      return new Response("ok", { status: 200 });
     }
 
     const paymentMethod =

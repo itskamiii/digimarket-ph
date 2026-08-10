@@ -221,3 +221,30 @@ export async function markOrderPaid(orderId: string, paymentMethod: string | nul
   if (error) throw error;
   return (data ?? []).length > 0;
 }
+
+// Only ever clears a genuinely outstanding balance (> 0) — returns false for a safe
+// webhook replay (already cleared to 0). The unit still needs markUnitsSold() separately;
+// this just settles the money side of a layaway order.
+export async function markLayawayBalancePaid(orderId: string): Promise<boolean> {
+  const { data, error } = await getSupabase()
+    .from("orders")
+    .update({ layaway_balance_php: 0 })
+    .eq("id", orderId)
+    .gt("layaway_balance_php", 0)
+    .select("id");
+  if (error) throw error;
+  return (data ?? []).length > 0;
+}
+
+// For the daily reminder cron — only orders whose down payment actually cleared
+// (status "paid") and that still owe something real.
+export async function getOutstandingLayawayOrders(): Promise<OrderRow[]> {
+  const { data, error } = await getSupabase()
+    .from("orders")
+    .select("*")
+    .eq("payment_plan", "layaway")
+    .eq("status", "paid")
+    .gt("layaway_balance_php", 0);
+  if (error) throw error;
+  return data as OrderRow[];
+}

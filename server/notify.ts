@@ -28,11 +28,17 @@ function courierActionNeeded(shippingMethod: ShippingMethod, fulfillmentMethod: 
   return null;
 }
 
+function payBalanceLink(orderId: string): string {
+  const siteUrl = process.env.SITE_URL ?? "";
+  return `${siteUrl}/?payBalance=${orderId}`;
+}
+
 // Layaway's balance is never collected automatically (PayMongo Checkout Sessions can't
-// do a recurring/scheduled charge) — this always needs a human to send a payment
-// breakdown and follow up before the deadline, on top of whatever the courier itself needs.
-function layawayActionNeeded(balancePhp: number, dueAt: string): string {
-  return `Layaway — down payment + reservation fee received. Balance of ${peso(balancePhp)} is due by ${formatDate(dueAt)}: send the customer a payment breakdown and follow up before the deadline.`;
+// do a recurring/scheduled charge) — this always needs a human to send the customer
+// their pay-balance link and follow up before the deadline, on top of whatever the
+// courier itself needs.
+function layawayActionNeeded(orderId: string, balancePhp: number, dueAt: string): string {
+  return `Layaway — down payment + reservation fee received. Balance of ${peso(balancePhp)} is due by ${formatDate(dueAt)}: send the customer their pay-balance link (${payBalanceLink(orderId)}) and follow up before the deadline.`;
 }
 
 // Reuses the same Formspree form as the waitlist signup — it's already wired to the
@@ -78,7 +84,7 @@ export async function notifyNewOrder(params: {
   const itemsLine = params.items.map((i) => `${i.quantity}x ${i.name} (${peso(i.price)})`).join("; ");
   const isLayaway = params.paymentPlan === "layaway" && params.layawayBalancePhp != null && params.layawayBalanceDueAt;
   const action = [
-    isLayaway ? layawayActionNeeded(params.layawayBalancePhp!, params.layawayBalanceDueAt!) : null,
+    isLayaway ? layawayActionNeeded(params.orderId, params.layawayBalancePhp!, params.layawayBalanceDueAt!) : null,
     courierActionNeeded(params.shippingMethod, params.fulfillmentMethod),
   ]
     .filter((note): note is string => note !== null)
@@ -104,6 +110,46 @@ export async function notifyNewOrder(params: {
       ...(action ? { actionNeeded: action } : {}),
     },
     "new-order notification"
+  );
+}
+
+// The balance cleared — order is now fully paid off and the unit's been marked sold.
+// Nothing further is automated (packing/shipping is still on the owner), but there's no
+// more money to collect.
+export async function notifyLayawayBalancePaid(params: { orderId: string; customerName: string }): Promise<void> {
+  await sendToFormspree(
+    {
+      _subject: `Layaway balance paid in full — order ready to fulfill`,
+      orderId: params.orderId,
+      customerName: params.customerName,
+      note: "The remaining layaway balance just cleared and the unit is marked sold. Nothing left to collect — go ahead and arrange fulfillment.",
+    },
+    "layaway-balance-paid notification"
+  );
+}
+
+// Daily digest for the reminder cron (api/cron/layaway-reminders.ts) — one email listing
+// every layaway order whose balance is due soon or already overdue, rather than one email
+// per order. Skips sending entirely if there's nothing to flag.
+export async function notifyLayawayReminders(
+  orders: { orderId: string; customerName: string; balancePhp: number; dueAt: string; overdue: boolean }[]
+): Promise<void> {
+  if (orders.length === 0) return;
+  const overdueCount = orders.filter((o) => o.overdue).length;
+  const lines = orders
+    .sort((a, b) => a.dueAt.localeCompare(b.dueAt))
+    .map(
+      (o) =>
+        `${o.overdue ? "OVERDUE" : "Due soon"} — ${formatDate(o.dueAt)} — ${o.customerName} — ${peso(o.balancePhp)} — ${payBalanceLink(o.orderId)} (order ${o.orderId})`
+    )
+    .join("\n");
+
+  await sendToFormspree(
+    {
+      _subject: `Layaway balances: ${overdueCount} overdue, ${orders.length - overdueCount} due soon`,
+      note: lines,
+    },
+    "layaway-reminders digest"
   );
 }
 

@@ -8,6 +8,7 @@ import Footer from "./components/Footer";
 import Hero from "./components/Hero";
 import Navbar from "./components/Navbar";
 import OrderStatus from "./components/OrderStatus";
+import PayBalance from "./components/PayBalance";
 import Showcase from "./components/Showcase";
 import SocialProof from "./components/SocialProof";
 import Testimonials from "./components/Testimonials";
@@ -47,6 +48,7 @@ function AppShell() {
       />
       <Checkout open={checkoutOpen} onClose={() => setCheckoutOpen(false)} />
       <OrderStatus />
+      <PayBalance />
     </div>
   );
 }
