@@ -1,3 +1,4 @@
+import { Analytics } from "@vercel/analytics/react";
 import { useState } from "react";
 import CartDrawer from "./components/CartDrawer";
 import Checkout from "./components/Checkout";
@@ -49,6 +50,7 @@ function AppShell() {
       <Checkout open={checkoutOpen} onClose={() => setCheckoutOpen(false)} />
       <OrderStatus />
       <PayBalance />
+      <Analytics />
     </div>
   );
 }
