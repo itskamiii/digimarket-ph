@@ -12,7 +12,25 @@ import {
 import { notifyNewOrder } from "../server/notify.js";
 import { createCheckoutSession, type CheckoutLineItem } from "../server/paymongo.js";
 import { allowCheckoutAttempt, getClientIp } from "../server/rateLimit.js";
-import type { CheckoutItemInput, CheckoutRequestBody, ShippingAddress } from "../server/types.js";
+import type { CheckoutItemInput, CheckoutRequestBody, PaymentPlan, ShippingAddress } from "../server/types.js";
+
+// 30% down payment + 5% reservation fee, computed together so the two numbers always
+// sum to exactly 35% of the subtotal (rounding each independently could leave a
+// stray peso unaccounted for between "charged now" and "balance owed").
+const LAYAWAY_DOWN_PAYMENT_PCT = 0.3;
+const LAYAWAY_UPFRONT_PCT = 0.35;
+const LAYAWAY_BALANCE_WINDOW_DAYS = 30;
+
+function computeLayawaySplit(subtotalPhp: number): { downPaymentPhp: number; reservationFeePhp: number; upfrontPhp: number; balancePhp: number } {
+  const downPaymentPhp = Math.round(subtotalPhp * LAYAWAY_DOWN_PAYMENT_PCT);
+  const upfrontPhp = Math.round(subtotalPhp * LAYAWAY_UPFRONT_PCT);
+  return {
+    downPaymentPhp,
+    reservationFeePhp: upfrontPhp - downPaymentPhp,
+    upfrontPhp,
+    balancePhp: subtotalPhp - upfrontPhp,
+  };
+}
 
 function isValidEmail(email: string): boolean {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
@@ -68,6 +86,17 @@ export async function POST(request: Request) {
     return Response.json({ error: "invalid_fulfillment_method" }, { status: 400 });
   }
 
+  const paymentPlan: PaymentPlan = body.paymentPlan ?? "full";
+  if (paymentPlan !== "full" && paymentPlan !== "layaway") {
+    return Response.json({ error: "invalid_payment_plan" }, { status: 400 });
+  }
+  if (paymentPlan === "layaway" && body.fulfillmentMethod !== "online") {
+    // The down payment is always charged now, through PayMongo — this takes precedence
+    // over any courier's own payment-path rules (e.g. Meet up/Pick up normally force
+    // "cod", but a layaway down payment on those still goes through PayMongo first).
+    return Response.json({ error: "layaway_requires_online_payment" }, { status: 400 });
+  }
+
   const shippingMethod = body.shippingMethod ?? "lbc";
   if (!["lbc", "lalamove", "dhl", "meetup", "pickup"].includes(shippingMethod)) {
     return Response.json({ error: "invalid_shipping_method" }, { status: 400 });
@@ -87,9 +116,14 @@ export async function POST(request: Request) {
       return Response.json({ error: "invalid_dropoff_pin" }, { status: 400 });
     }
   }
-  if ((shippingMethod === "meetup" || shippingMethod === "pickup") && body.fulfillmentMethod !== "cod") {
+  if (
+    paymentPlan !== "layaway" &&
+    (shippingMethod === "meetup" || shippingMethod === "pickup") &&
+    body.fulfillmentMethod !== "cod"
+  ) {
     // No courier involved at all — always settled in person as cash or fund transfer,
-    // never prepaid through PayMongo.
+    // never prepaid through PayMongo. Layaway is the one exception: its down payment
+    // still goes through PayMongo even for an otherwise in-person exchange.
     return Response.json({ error: "in_person_requires_manual_payment" }, { status: 400 });
   }
 
@@ -139,6 +173,12 @@ export async function POST(request: Request) {
     shippingFeePhp = body.shipping.province === "Rizal" ? 250 : 300;
   }
 
+  const layawaySplit = paymentPlan === "layaway" ? computeLayawaySplit(subtotalPhp) : null;
+  const layawayBalanceDueAt =
+    paymentPlan === "layaway"
+      ? new Date(Date.now() + LAYAWAY_BALANCE_WINDOW_DAYS * 24 * 60 * 60 * 1000).toISOString()
+      : null;
+
   const order = await insertOrder({
     customerName: customer.name.trim(),
     customerEmail: customer.email.trim(),
@@ -151,16 +191,23 @@ export async function POST(request: Request) {
     shippingFeePhp,
     dropoffLat: shippingMethod === "lalamove" ? body.dropoffPin!.lat : null,
     dropoffLng: shippingMethod === "lalamove" ? body.dropoffPin!.lng : null,
+    paymentPlan,
+    layawayBalancePhp: layawaySplit?.balancePhp,
+    layawayBalanceDueAt,
   });
 
   try {
     await insertOrderItems(order.id, orderItems);
 
     // Physical units are one-of-a-kind and must be claimed atomically; kits aren't
-    // inventory-constrained (the owner picks a physical camera to fulfil it later).
+    // inventory-constrained (the owner picks a physical camera to fulfil it later). A
+    // layaway order is a real reservation too — held indefinitely just like COD, not on
+    // the short checkout-abandonment TTL.
     const unitIds = unitItems.map((i) => i.id);
     if (unitIds.length > 0) {
-      const { missingIds } = await reserveUnits(unitIds, order.id, { indefinite: body.fulfillmentMethod === "cod" });
+      const { missingIds } = await reserveUnits(unitIds, order.id, {
+        indefinite: body.fulfillmentMethod === "cod" || paymentPlan === "layaway",
+      });
       if (missingIds.length > 0) {
         await rollbackOrder(order.id);
         return Response.json({ error: "unavailable", unavailableItems: missingIds }, { status: 409 });
@@ -178,6 +225,9 @@ export async function POST(request: Request) {
         shippingAddress: body.shipping,
         fulfillmentMethod: "cod",
         shippingMethod,
+        // Layaway always requires fulfillmentMethod "online" (validated above), so this
+        // cod branch can never be a layaway order.
+        paymentPlan: "full",
         items: orderItems.map((i) => ({ name: i.name, price: i.price, quantity: i.quantity })),
         totalPhp: order.total_php,
       });
@@ -188,17 +238,25 @@ export async function POST(request: Request) {
     if (!siteUrl) throw new Error("SITE_URL is not set");
 
     // No shipping/delivery fee is ever charged online — every courier's fee is either
-    // collected on delivery or settled via DM (see shippingFeePhp above). This block only
-    // runs for fulfillmentMethod "online", where shippingFeePhp is always 0.
-    const session = await createCheckoutSession({
-      lineItems: orderItems.map(
-        (item): CheckoutLineItem => ({
+    // collected on delivery or settled via DM (see shippingFeePhp above), except Meet
+    // up's flat fee, which layaway folds into today's charge below.
+    const lineItems: CheckoutLineItem[] = layawaySplit
+      ? [
+          { name: "Down payment (30%)", amount: layawaySplit.downPaymentPhp * 100, currency: "PHP", quantity: 1 },
+          { name: "Reservation fee (5%)", amount: layawaySplit.reservationFeePhp * 100, currency: "PHP", quantity: 1 },
+          ...(shippingFeePhp > 0
+            ? [{ name: "Meet-up fee", amount: shippingFeePhp * 100, currency: "PHP" as const, quantity: 1 }]
+            : []),
+        ]
+      : orderItems.map((item) => ({
           name: item.name,
           amount: item.price * 100,
-          currency: "PHP",
+          currency: "PHP" as const,
           quantity: item.quantity,
-        })
-      ),
+        }));
+
+    const session = await createCheckoutSession({
+      lineItems,
       successUrl: `${siteUrl}/?order=${order.id}&status=success`,
       // Routed through a cleanup endpoint (not straight back to the site) so an explicit
       // cancel immediately frees the reserved units instead of waiting out the TTL —

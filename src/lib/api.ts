@@ -1,4 +1,4 @@
-import type { CheckoutRequestBody, ShippingMethod } from "../../server/types";
+import type { CheckoutRequestBody, PaymentPlan, ShippingMethod } from "../../server/types";
 import type { CatalogItem } from "./data";
 
 export type ProductsResponse = {
@@ -68,6 +68,9 @@ export type OrderStatusResult = {
   fulfillmentMethod: "online" | "cod";
   shippingMethod: ShippingMethod;
   totalPhp: number;
+  paymentPlan: PaymentPlan;
+  layawayBalancePhp: number | null;
+  layawayBalanceDueAt: string | null;
 };
 
 export async function fetchOrderStatus(orderId: string): Promise<OrderStatusResult> {

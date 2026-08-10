@@ -17,6 +17,9 @@ export async function GET(request: Request) {
       fulfillmentMethod: order.fulfillment_method,
       shippingMethod: order.shipping_method,
       totalPhp: order.total_php,
+      paymentPlan: order.payment_plan,
+      layawayBalancePhp: order.layaway_balance_php,
+      layawayBalanceDueAt: order.layaway_balance_due_at,
     });
   } catch (err) {
     console.error("GET /api/order-status failed", err);

@@ -3,13 +3,22 @@ import { Check, Loader2, X } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { useCart } from "../context/CartContext";
 import { fetchOrderStatus } from "../lib/api";
+import { formatPeso } from "../lib/format";
 import { EASE } from "./Reveal";
 import type { ShippingMethod } from "../../server/types";
+
+type PaidState = {
+  kind: "paid";
+  orderId: string;
+  shippingMethod: ShippingMethod;
+  layawayBalancePhp: number | null;
+  layawayBalanceDueAt: string | null;
+};
 
 type ViewState =
   | { kind: "hidden" }
   | { kind: "confirming"; orderId: string }
-  | { kind: "paid"; orderId: string; shippingMethod: ShippingMethod }
+  | PaidState
   | { kind: "pending"; orderId: string } // PayMongo accepted the payment but our webhook hasn't landed yet
   | { kind: "cancelled" };
 
@@ -71,7 +80,13 @@ export default function OrderStatus() {
             clear();
             clearedRef.current = true;
           }
-          setState({ kind: "paid", orderId, shippingMethod: result.shippingMethod });
+          setState({
+            kind: "paid",
+            orderId,
+            shippingMethod: result.shippingMethod,
+            layawayBalancePhp: result.paymentPlan === "layaway" ? result.layawayBalancePhp : null,
+            layawayBalanceDueAt: result.paymentPlan === "layaway" ? result.layawayBalanceDueAt : null,
+          });
           return;
         }
       } catch {
@@ -128,8 +143,14 @@ export default function OrderStatus() {
                 <span className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-lcd-500/15 text-lcd-500">
                   <Check className="h-7 w-7" strokeWidth={3} />
                 </span>
-                <p className="mt-4 font-display text-xl font-bold text-ink-900">Payment confirmed!</p>
-                <p className="mt-1 text-sm text-ink-500">{PAID_MESSAGE[state.shippingMethod]}</p>
+                <p className="mt-4 font-display text-xl font-bold text-ink-900">
+                  {state.layawayBalancePhp !== null ? "Down payment confirmed!" : "Payment confirmed!"}
+                </p>
+                <p className="mt-1 text-sm text-ink-500">
+                  {state.layawayBalancePhp !== null && state.layawayBalanceDueAt
+                    ? `Your unit is reserved. Balance of ${formatPeso(state.layawayBalancePhp)} is due by ${new Date(state.layawayBalanceDueAt).toLocaleDateString("en-PH", { year: "numeric", month: "short", day: "numeric" })} — we'll DM you a payment breakdown.`
+                    : PAID_MESSAGE[state.shippingMethod]}
+                </p>
                 <p className="mt-3 font-mono text-[10px] font-bold uppercase tracking-[0.18em] text-ink-400">
                   Order #{state.orderId.slice(0, 8)}
                 </p>

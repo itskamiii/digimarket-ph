@@ -1,5 +1,14 @@
 import { getSupabase } from "./supabase.js";
-import type { KitRow, OrderItemRow, OrderRow, OrderStatusValue, ShippingAddress, ShippingMethod, UnitRow } from "./types.js";
+import type {
+  KitRow,
+  OrderItemRow,
+  OrderRow,
+  OrderStatusValue,
+  PaymentPlan,
+  ShippingAddress,
+  ShippingMethod,
+  UnitRow,
+} from "./types.js";
 
 export async function getProducts(): Promise<{ units: UnitRow[]; kits: KitRow[] }> {
   const supabase = getSupabase();
@@ -89,6 +98,9 @@ export type NewOrderInput = {
   shippingFeePhp: number;
   dropoffLat?: number | null;
   dropoffLng?: number | null;
+  paymentPlan: PaymentPlan;
+  layawayBalancePhp?: number | null;
+  layawayBalanceDueAt?: string | null;
 };
 
 export async function insertOrder(order: NewOrderInput): Promise<OrderRow> {
@@ -107,6 +119,9 @@ export async function insertOrder(order: NewOrderInput): Promise<OrderRow> {
       shipping_method: order.shippingMethod,
       dropoff_lat: order.dropoffLat ?? null,
       dropoff_lng: order.dropoffLng ?? null,
+      payment_plan: order.paymentPlan,
+      layaway_balance_php: order.layawayBalancePhp ?? null,
+      layaway_balance_due_at: order.layawayBalanceDueAt ?? null,
     })
     .select()
     .single();

@@ -76,7 +76,12 @@ export async function POST(request: Request) {
 
     const newlyPaid = await markOrderPaid(order.id, paymentMethod);
     if (newlyPaid) {
-      await markUnitsSold(order.id);
+      // A layaway down payment doesn't complete the sale — the unit stays reserved
+      // (indefinitely, already set at checkout time) until the owner manually confirms
+      // the balance is in and flips it to sold themselves.
+      if (order.payment_plan !== "layaway") {
+        await markUnitsSold(order.id);
+      }
       const orderItems = await getOrderItemsByOrderId(order.id);
       await notifyNewOrder({
         orderId: order.id,
@@ -86,6 +91,9 @@ export async function POST(request: Request) {
         shippingAddress: order.shipping_address,
         fulfillmentMethod: "online",
         shippingMethod: order.shipping_method,
+        paymentPlan: order.payment_plan,
+        layawayBalancePhp: order.layaway_balance_php,
+        layawayBalanceDueAt: order.layaway_balance_due_at,
         items: orderItems.map((i) => ({ name: i.name_snapshot, price: i.price_php_snapshot, quantity: i.quantity })),
         totalPhp: order.total_php,
       });

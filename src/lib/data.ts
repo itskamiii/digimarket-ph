@@ -247,7 +247,7 @@ export const FAQS = [
   },
   {
     q: "Can I reserve a unit instead of paying in full?",
-    a: "Yes, by messaging us directly. Reservations require a 30% down payment plus a 5% reservation fee, with the remaining balance due within 30 days of your down payment (the day it's sent counts as day 1) — we'll send a payment breakdown for reference. Reservations are final: no refund if the 30-day window lapses, no cancellations, and no switching units once your down payment is in.",
+    a: "Yes — choose Layaway at checkout. You'll pay a 30% down payment plus a 5% reservation fee online now, with the remaining balance due within 30 days of your down payment (the day it's sent counts as day 1) — we'll DM you a payment breakdown for the balance. Layaway is final: no refund if the 30-day window lapses, no cancellations, and no switching units once your down payment is in.",
   },
   {
     q: "Do I need to know photography?",

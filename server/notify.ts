@@ -1,13 +1,14 @@
-import type { ShippingAddress, ShippingMethod } from "./types.js";
+import type { PaymentPlan, ShippingAddress, ShippingMethod } from "./types.js";
 
 const peso = (n: number) => "₱" + n.toLocaleString("en-PH");
+const formatDate = (iso: string) => new Date(iso).toLocaleDateString("en-PH", { year: "numeric", month: "short", day: "numeric" });
 
 // What the owner still needs to do by hand for this order. LBC needs nothing special
 // either way (COD is standard courier procedure; online has nothing left to arrange) —
 // everything else needs manual follow-up regardless of payment path, since Lalamove
 // booking and DHL rate-quoting are never automated, and Meet up/Pick up are always
 // arranged fresh over DM.
-function actionNeeded(shippingMethod: ShippingMethod, fulfillmentMethod: "online" | "cod"): string | null {
+function courierActionNeeded(shippingMethod: ShippingMethod, fulfillmentMethod: "online" | "cod"): string | null {
   if (shippingMethod === "lalamove") {
     return fulfillmentMethod === "online"
       ? "Item is paid — book the Lalamove delivery yourself using the dropoff pin on this order."
@@ -25,6 +26,13 @@ function actionNeeded(shippingMethod: ShippingMethod, fulfillmentMethod: "online
     return "Message the customer on Instagram to arrange a pickup time — cash or fund transfer on the day, no extra fee.";
   }
   return null;
+}
+
+// Layaway's balance is never collected automatically (PayMongo Checkout Sessions can't
+// do a recurring/scheduled charge) — this always needs a human to send a payment
+// breakdown and follow up before the deadline, on top of whatever the courier itself needs.
+function layawayActionNeeded(balancePhp: number, dueAt: string): string {
+  return `Layaway — down payment + reservation fee received. Balance of ${peso(balancePhp)} is due by ${formatDate(dueAt)}: send the customer a payment breakdown and follow up before the deadline.`;
 }
 
 // Reuses the same Formspree form as the waitlist signup — it's already wired to the
@@ -59,17 +67,29 @@ export async function notifyNewOrder(params: {
   shippingMethod: ShippingMethod;
   items: { name: string; price: number; quantity: number }[];
   totalPhp: number;
+  paymentPlan: PaymentPlan;
+  layawayBalancePhp?: number | null;
+  layawayBalanceDueAt?: string | null;
 }): Promise<void> {
   const addr = params.shippingAddress;
   const shippingLine = [addr.line1, addr.line2, addr.city, addr.province, addr.postalCode]
     .filter(Boolean)
     .join(", ");
   const itemsLine = params.items.map((i) => `${i.quantity}x ${i.name} (${peso(i.price)})`).join("; ");
-  const action = actionNeeded(params.shippingMethod, params.fulfillmentMethod);
+  const isLayaway = params.paymentPlan === "layaway" && params.layawayBalancePhp != null && params.layawayBalanceDueAt;
+  const action = [
+    isLayaway ? layawayActionNeeded(params.layawayBalancePhp!, params.layawayBalanceDueAt!) : null,
+    courierActionNeeded(params.shippingMethod, params.fulfillmentMethod),
+  ]
+    .filter((note): note is string => note !== null)
+    .join(" ");
+  const collectedNow = isLayaway ? params.totalPhp - params.layawayBalancePhp! : params.totalPhp;
 
   await sendToFormspree(
     {
-      _subject: `New ${params.fulfillmentMethod === "cod" ? "manual-pay" : "paid online"} order (${params.shippingMethod}) — ${peso(params.totalPhp)}`,
+      _subject: isLayaway
+        ? `New layaway order (${params.shippingMethod}) — ${peso(collectedNow)} today, ${peso(params.layawayBalancePhp!)} balance`
+        : `New ${params.fulfillmentMethod === "cod" ? "manual-pay" : "paid online"} order (${params.shippingMethod}) — ${peso(params.totalPhp)}`,
       _replyto: params.customerEmail,
       orderId: params.orderId,
       customerName: params.customerName,
@@ -78,6 +98,7 @@ export async function notifyNewOrder(params: {
       shippingAddress: shippingLine,
       fulfillmentMethod: params.fulfillmentMethod,
       shippingMethod: params.shippingMethod,
+      paymentPlan: params.paymentPlan,
       items: itemsLine,
       total: peso(params.totalPhp),
       ...(action ? { actionNeeded: action } : {}),

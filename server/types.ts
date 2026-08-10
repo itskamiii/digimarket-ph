@@ -55,6 +55,11 @@ export type ShippingMethod = "lbc" | "lalamove" | "dhl" | "meetup" | "pickup";
 
 export type LatLng = { lat: number; lng: number };
 
+// "layaway" always requires fulfillmentMethod "online" — the 30% down payment + 5%
+// reservation fee is charged now, the remaining 65% is owed within 30 days and always
+// collected manually (no recurring-charge mechanism in PayMongo Checkout Sessions).
+export type PaymentPlan = "full" | "layaway";
+
 export type CheckoutRequestBody = {
   items: CheckoutItemInput[];
   customer: { name: string; email: string; phone: string };
@@ -62,6 +67,7 @@ export type CheckoutRequestBody = {
   fulfillmentMethod: "online" | "cod";
   shippingMethod?: ShippingMethod; // defaults to "lbc" server-side when omitted
   dropoffPin?: LatLng; // required when shippingMethod === "lalamove"
+  paymentPlan?: PaymentPlan; // defaults to "full" server-side when omitted
 };
 
 export type OrderRow = {
@@ -84,6 +90,9 @@ export type OrderRow = {
   lalamove_order_id: string | null;
   lalamove_share_link: string | null;
   lalamove_status: string | null;
+  payment_plan: PaymentPlan;
+  layaway_balance_php: number | null;
+  layaway_balance_due_at: string | null;
   notes: string | null;
 };
 

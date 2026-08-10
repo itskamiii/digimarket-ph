@@ -21,6 +21,8 @@ const ERROR_MESSAGES: Record<string, string> = {
   invalid_dropoff_pin: "Please drop a pin at your exact delivery location.",
   lalamove_unavailable: "Couldn't reach Lalamove for a delivery quote — please try again, or choose LBC.",
   in_person_requires_manual_payment: "Meet up and Pick up are always settled in person — please try again.",
+  invalid_payment_plan: "Please choose Full or Layaway.",
+  layaway_requires_online_payment: "Layaway's down payment is always paid online — please try again.",
   empty_cart: "Your bag is empty.",
   rate_limited: "Too many checkout attempts — please wait a few minutes and try again.",
 };
@@ -66,6 +68,22 @@ const COURIER_HINTS: Record<ShippingMethod, string> = {
   pickup: "No fee — at our location",
 };
 
+type PaymentPlan = "full" | "layaway";
+
+// Mirrors api/checkout.ts's computeLayawaySplit exactly — 30% down payment + 5%
+// reservation fee, computed together so the two numbers always sum to exactly 35% of
+// the subtotal (rounding each independently could leave a stray peso unaccounted for).
+function computeLayawaySplit(subtotalPhp: number) {
+  const downPaymentPhp = Math.round(subtotalPhp * 0.3);
+  const upfrontPhp = Math.round(subtotalPhp * 0.35);
+  return {
+    downPaymentPhp,
+    reservationFeePhp: upfrontPhp - downPaymentPhp,
+    upfrontPhp,
+    balancePhp: subtotalPhp - upfrontPhp,
+  };
+}
+
 const CONFIRMATION_TEXT: Record<ShippingMethod, string> = {
   lbc: "We've reserved your unit(s). Pay the courier on delivery. We'll DM/email you shipping details shortly.",
   lalamove:
@@ -94,6 +112,11 @@ export default function Checkout({ open, onClose }: { open: boolean; onClose: ()
   const [lalamoveFeePhp, setLalamoveFeePhp] = useState<number | null>(null);
   const [lalamoveQuoteLoading, setLalamoveQuoteLoading] = useState(false);
   const [lalamoveQuoteError, setLalamoveQuoteError] = useState<string | null>(null);
+  // null = the "Full or Layaway?" step hasn't been answered yet; gates the rest of the
+  // form (see the render branches below).
+  const [paymentPlan, setPaymentPlan] = useState<PaymentPlan | null>(null);
+
+  const layawaySplit = computeLayawaySplit(subtotal);
 
   // Courier is chosen before the address, so eligibility can only be checked once the
   // customer has typed a province — surfaced as an inline warning (below) rather than
@@ -101,14 +124,19 @@ export default function Checkout({ open, onClose }: { open: boolean; onClose: ()
   const isMetroManila = province === "Metro Manila";
   const lalamoveIneligible = shippingMethod === "lalamove" && province !== "" && !isMetroManila;
 
-  // Meet up / Pick up have no "pay online now" alternative — force fulfillmentMethod
-  // to "cod" the instant one is selected, since the payment-method section is hidden
-  // for them entirely (see JSX below).
+  // Layaway's down payment always goes through PayMongo, taking precedence over Meet
+  // up/Pick up's usual "force cod" rule (see the effect's normal case below) — the
+  // down payment is a separate, unrelated online charge from however the item
+  // eventually gets physically handed over.
   useEffect(() => {
+    if (paymentPlan === "layaway") {
+      if (fulfillmentMethod !== "online") setFulfillmentMethod("online");
+      return;
+    }
     if (IN_PERSON_METHODS.has(shippingMethod) && fulfillmentMethod !== "cod") {
       setFulfillmentMethod("cod");
     }
-  }, [shippingMethod, fulfillmentMethod]);
+  }, [shippingMethod, fulfillmentMethod, paymentPlan]);
 
   // Flat meet-up fee, cheaper within Rizal (where the business is based, in Cainta) than
   // further out — no fee at all for pickup.
@@ -118,6 +146,10 @@ export default function Checkout({ open, onClose }: { open: boolean; onClose: ()
   // booked manually on the owner's phone regardless of payment path). Only Meet up
   // contributes a real, known-upfront fee.
   const shippingFeePhp = shippingMethod === "meetup" ? meetupFeePhp : 0;
+  // What actually gets charged through PayMongo right now — the full subtotal (+ any
+  // upfront courier fee) for a full payment, or just the down payment + reservation fee
+  // (+ upfront courier fee) for layaway. The layaway balance is never part of this.
+  const dueTodayPhp = (paymentPlan === "layaway" ? layawaySplit.upfrontPhp : subtotal) + shippingFeePhp;
 
   // Fee depends only on the dropped pin, not the typed address text, so this only
   // re-fires when the pin actually moves — not on every keystroke elsewhere in the form.
@@ -199,6 +231,7 @@ export default function Checkout({ open, onClose }: { open: boolean; onClose: ()
         fulfillmentMethod,
         shippingMethod,
         dropoffPin: shippingMethod === "lalamove" ? dropoffPin! : undefined,
+        paymentPlan: paymentPlan ?? "full",
       });
 
       if (result.redirect) {
@@ -223,6 +256,7 @@ export default function Checkout({ open, onClose }: { open: boolean; onClose: ()
   const handleClose = () => {
     setCodConfirmedOrderId(null);
     setError(null);
+    setPaymentPlan(null);
     onClose();
   };
 
@@ -281,12 +315,49 @@ export default function Checkout({ open, onClose }: { open: boolean; onClose: ()
                   Done
                 </button>
               </div>
+            ) : items.length === 0 ? (
+              <p className="py-10 text-center text-sm text-ink-500">Your bag is empty.</p>
+            ) : paymentPlan === null ? (
+              <div className="flex flex-col gap-4 px-6 py-8">
+                <p className="text-center text-sm text-ink-500">How would you like to pay for this order?</p>
+                <div className="grid gap-3 sm:grid-cols-2">
+                  <button
+                    type="button"
+                    onClick={() => setPaymentPlan("full")}
+                    className="flex flex-col items-start gap-1.5 rounded-3xl border border-ink-900/10 p-5 text-left transition-colors duration-300 hover:border-flash-500/50 hover:bg-flash-500/5"
+                  >
+                    <p className="font-display text-lg font-bold text-ink-900">Pay in Full</p>
+                    <p className="text-xs text-ink-500">
+                      Pay {formatPeso(subtotal)} — online, cash on delivery, or however each courier allows.
+                    </p>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setPaymentPlan("layaway")}
+                    className="flex flex-col items-start gap-1.5 rounded-3xl border border-ink-900/10 p-5 text-left transition-colors duration-300 hover:border-flash-500/50 hover:bg-flash-500/5"
+                  >
+                    <p className="font-display text-lg font-bold text-ink-900">Layaway</p>
+                    <p className="text-xs text-ink-500">
+                      Reserve it for {formatPeso(layawaySplit.upfrontPhp)} now (30% down + 5% fee), pay the{" "}
+                      {formatPeso(layawaySplit.balancePhp)} balance within 30 days.
+                    </p>
+                  </button>
+                </div>
+                <p className="text-center text-[11px] leading-relaxed text-ink-400">
+                  Layaway is final — no refund if the 30-day window lapses, no cancellations, no switching units
+                  once your down payment is in.
+                </p>
+              </div>
             ) : (
               <form onSubmit={onSubmit} className="flex flex-col gap-5 px-6 py-6">
-                {items.length === 0 ? (
-                  <p className="py-10 text-center text-sm text-ink-500">Your bag is empty.</p>
-                ) : (
-                  <>
+                <>
+                    <button
+                      type="button"
+                      onClick={() => setPaymentPlan(null)}
+                      className="-mb-1 self-start text-xs font-semibold text-ink-500 hover:text-ink-900"
+                    >
+                      ← Change payment plan
+                    </button>
                     <div className="rounded-2xl border border-ink-900/8 bg-cream-100/60 p-4">
                       <ul className="space-y-2">
                         {items.map((item) => (
@@ -305,6 +376,22 @@ export default function Checkout({ open, onClose }: { open: boolean; onClose: ()
                         <span className="text-sm text-ink-500">Subtotal</span>
                         <span className="text-sm font-semibold text-ink-900">{formatPeso(subtotal)}</span>
                       </div>
+                      {paymentPlan === "layaway" && (
+                        <>
+                          <div className="mt-1.5 flex items-center justify-between">
+                            <span className="text-sm text-ink-500">Down payment (30%)</span>
+                            <span className="text-sm font-semibold text-ink-900">
+                              {formatPeso(layawaySplit.downPaymentPhp)}
+                            </span>
+                          </div>
+                          <div className="mt-1.5 flex items-center justify-between">
+                            <span className="text-sm text-ink-500">Reservation fee (5%)</span>
+                            <span className="text-sm font-semibold text-ink-900">
+                              {formatPeso(layawaySplit.reservationFeePhp)}
+                            </span>
+                          </div>
+                        </>
+                      )}
                       {shippingMethod === "lalamove" && (
                         <div className="mt-1.5 flex items-center justify-between">
                           <span className="text-sm text-ink-500">SF</span>
@@ -326,11 +413,19 @@ export default function Checkout({ open, onClose }: { open: boolean; onClose: ()
                         </div>
                       )}
                       <div className="mt-1.5 flex items-center justify-between">
-                        <span className="text-sm font-semibold text-ink-900">Total</span>
-                        <span className="font-display text-lg font-bold text-ink-900">
-                          {formatPeso(subtotal + shippingFeePhp)}
+                        <span className="text-sm font-semibold text-ink-900">
+                          {paymentPlan === "layaway" ? "Due today" : "Total"}
                         </span>
+                        <span className="font-display text-lg font-bold text-ink-900">{formatPeso(dueTodayPhp)}</span>
                       </div>
+                      {paymentPlan === "layaway" && (
+                        <div className="mt-1.5 flex items-center justify-between">
+                          <span className="text-sm text-ink-500">Balance (due in 30 days)</span>
+                          <span className="text-sm font-semibold text-ink-900">
+                            {formatPeso(layawaySplit.balancePhp)}
+                          </span>
+                        </div>
+                      )}
                     </div>
 
                     <div>
@@ -350,7 +445,12 @@ export default function Checkout({ open, onClose }: { open: boolean; onClose: ()
                       </div>
                     </div>
 
-                    {IN_PERSON_METHODS.has(shippingMethod) ? (
+                    {paymentPlan === "layaway" ? (
+                      <p className="text-xs text-ink-500">
+                        Down payment + reservation fee paid online via QR (QRPh) now. Balance due within 30 days —
+                        we'll DM you a payment breakdown.
+                      </p>
+                    ) : IN_PERSON_METHODS.has(shippingMethod) ? (
                       <p className="text-xs text-ink-500">
                         {shippingMethod === "meetup"
                           ? "Cash or fund transfer when we meet up, plus the meet-up fee shown above."
@@ -484,10 +584,13 @@ export default function Checkout({ open, onClose }: { open: boolean; onClose: ()
                       className="btn-shine flex items-center justify-center gap-2 rounded-full bg-flash-500 px-6 py-4 text-sm font-semibold text-cream-50 shadow-xl shadow-flash-500/35 transition-all duration-300 hover:-translate-y-0.5 hover:bg-flash-600 disabled:pointer-events-none disabled:opacity-60"
                     >
                       {submitting && <Loader2 className="h-4 w-4 animate-spin" />}
-                      {fulfillmentMethod === "cod" ? "Place order" : "Continue to payment"}
+                      {paymentPlan === "layaway"
+                        ? "Continue to down payment"
+                        : fulfillmentMethod === "cod"
+                          ? "Place order"
+                          : "Continue to payment"}
                     </button>
-                  </>
-                )}
+                </>
               </form>
             )}
           </motion.div>
