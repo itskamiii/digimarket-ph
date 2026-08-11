@@ -115,19 +115,27 @@ export async function POST(request: Request) {
       // No automatic Lalamove booking here — for a paid-online Lalamove order, the owner
       // books the actual delivery manually on their phone using the dropoff pin already
       // on the order (order.dropoff_lat/dropoff_lng).
-    } else if (order.status !== "paid") {
-      // `order` was fetched before markOrderPaid ran, so its status here reflects what
-      // the order was BEFORE this webhook — not "paid" means it was already dead
-      // (cancelled/expired) when this payment confirmation arrived. Real money came in
-      // for a unit that may no longer be held for this customer; needs a human.
-      console.error("PayMongo webhook: payment confirmed for a dead order", {
-        orderId: order.id,
-        orderStatus: order.status,
-        eventType,
-      });
-      await notifyPaymentOnDeadOrder({ orderId: order.id, orderStatus: order.status, eventType });
+    } else {
+      // markOrderPaid only fails to flip a row when the order is no longer
+      // "pending_payment" — but that's normal and expected: PayMongo reliably sends
+      // *two* events per successful payment (checkout_session.payment.paid AND
+      // payment.paid), so the second one arriving here after the first already marked
+      // the order paid is the common case, not an error. Re-fetch the CURRENT status
+      // (not the `order` snapshot from before markOrderPaid ran, which is stale and
+      // caused a real false-positive alert here in production) to tell that apart from
+      // a genuinely dead order (cancelled/expired) that a late payment came in for.
+      const freshOrder = await getOrderById(order.id);
+      if (freshOrder && freshOrder.status !== "paid") {
+        console.error("PayMongo webhook: payment confirmed for a dead order", {
+          orderId: order.id,
+          orderStatus: freshOrder.status,
+          eventType,
+        });
+        await notifyPaymentOnDeadOrder({ orderId: order.id, orderStatus: freshOrder.status, eventType });
+      }
+      // else: already paid (by this event or the sibling event for the same payment) —
+      // safe no-op.
     }
-    // else: already paid — safe no-op, PayMongo redelivered the event.
 
     return new Response("ok", { status: 200 });
   } catch (err) {
