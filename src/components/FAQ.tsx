@@ -112,7 +112,7 @@ export default function FAQ() {
                 </div>
               </div>
               <a
-                href="#cta"
+                href="https://instagram.com/digimarket_ph"
                 className="mt-5 inline-flex w-full items-center justify-center gap-2 rounded-full bg-ink-900 px-5 py-3.5 text-sm font-semibold text-cream-50 transition-all duration-300 hover:-translate-y-0.5 hover:bg-ink-800"
               >
                 @digimarket_ph
