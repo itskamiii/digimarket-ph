@@ -14,21 +14,32 @@ import { createCheckoutSession, type CheckoutLineItem } from "../server/paymongo
 import { allowCheckoutAttempt, getClientIp } from "../server/rateLimit.js";
 import type { CheckoutItemInput, CheckoutRequestBody, PaymentPlan, ShippingAddress } from "../server/types.js";
 
-// 30% down payment + 5% reservation fee, computed together so the two numbers always
-// sum to exactly 35% of the subtotal (rounding each independently could leave a
-// stray peso unaccounted for between "charged now" and "balance owed").
+// A 5% reservation fee is added ON TOP of the subtotal to get the New Total, then the
+// down payment due today is 30% of that fee-inclusive New Total (not 30% of the plain
+// subtotal) — the balance is whatever's left of the New Total. All done in integer
+// centavos so downPayment + balance always reconciles to exactly the New Total (no
+// stray centavo from rounding each piece independently).
+const LAYAWAY_FEE_PCT = 0.05;
 const LAYAWAY_DOWN_PAYMENT_PCT = 0.3;
-const LAYAWAY_UPFRONT_PCT = 0.35;
 const LAYAWAY_BALANCE_WINDOW_DAYS = 30;
 
-function computeLayawaySplit(subtotalPhp: number): { downPaymentPhp: number; reservationFeePhp: number; upfrontPhp: number; balancePhp: number } {
-  const downPaymentPhp = Math.round(subtotalPhp * LAYAWAY_DOWN_PAYMENT_PCT);
-  const upfrontPhp = Math.round(subtotalPhp * LAYAWAY_UPFRONT_PCT);
+function computeLayawaySplit(subtotalPhp: number): {
+  reservationFeePhp: number;
+  newTotalPhp: number;
+  downPaymentPhp: number;
+  downPaymentCentavos: number;
+  balancePhp: number;
+} {
+  const subtotalCentavos = Math.round(subtotalPhp * 100);
+  const feeCentavos = Math.round(subtotalCentavos * LAYAWAY_FEE_PCT);
+  const newTotalCentavos = subtotalCentavos + feeCentavos;
+  const downPaymentCentavos = Math.round(newTotalCentavos * LAYAWAY_DOWN_PAYMENT_PCT);
   return {
-    downPaymentPhp,
-    reservationFeePhp: upfrontPhp - downPaymentPhp,
-    upfrontPhp,
-    balancePhp: subtotalPhp - upfrontPhp,
+    reservationFeePhp: feeCentavos / 100,
+    newTotalPhp: newTotalCentavos / 100,
+    downPaymentPhp: downPaymentCentavos / 100,
+    downPaymentCentavos,
+    balancePhp: (newTotalCentavos - downPaymentCentavos) / 100,
   };
 }
 
@@ -186,6 +197,9 @@ export async function POST(request: Request) {
     shippingAddress: body.shipping,
     fulfillmentMethod: body.fulfillmentMethod,
     subtotalPhp,
+    // Full-payment total is just subtotal + shipping; layaway's is the fee-inclusive
+    // New Total + shipping (total_php always reflects the FULL order value either way).
+    totalPhp: (layawaySplit ? layawaySplit.newTotalPhp : subtotalPhp) + shippingFeePhp,
     status: body.fulfillmentMethod === "cod" ? "cod_pending" : "pending_payment",
     shippingMethod,
     shippingFeePhp,
@@ -242,8 +256,14 @@ export async function POST(request: Request) {
     // up's flat fee, which layaway folds into today's charge below.
     const lineItems: CheckoutLineItem[] = layawaySplit
       ? [
-          { name: "Down payment (30%)", amount: layawaySplit.downPaymentPhp * 100, currency: "PHP", quantity: 1 },
-          { name: "Reservation fee (5%)", amount: layawaySplit.reservationFeePhp * 100, currency: "PHP", quantity: 1 },
+          // The 5% fee is already folded into the New Total that this 30% is computed
+          // from, not charged as a separate amount — see computeLayawaySplit above.
+          {
+            name: "Down payment (30%, incl. 5% reservation fee)",
+            amount: layawaySplit.downPaymentCentavos,
+            currency: "PHP",
+            quantity: 1,
+          },
           ...(shippingFeePhp > 0
             ? [{ name: "Meet-up fee", amount: shippingFeePhp * 100, currency: "PHP" as const, quantity: 1 }]
             : []),

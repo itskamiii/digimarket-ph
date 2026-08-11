@@ -42,15 +42,23 @@ alter table orders drop constraint if exists orders_shipping_method_check;
 alter table orders add constraint orders_shipping_method_check
   check (shipping_method in ('lbc', 'lalamove', 'dhl', 'meetup', 'pickup'));
 
--- Layaway: 30% down payment + 5% reservation fee charged now (folded into the same
--- PayMongo charge as any upfront courier fee), the rest owed within 30 days and always
--- collected manually — there's no recurring/scheduled charge in PayMongo Checkout
--- Sessions, so layaway_balance_php/due_at just track what's still owed for the owner to
--- follow up on. total_php still holds the FULL order value either way (down payment +
--- balance); layaway_balance_php is the portion of that not collected at checkout time.
+-- Layaway: a 5% reservation fee is added ON TOP of the subtotal (New Total = subtotal *
+-- 1.05), then a 30% down payment of that fee-inclusive New Total is charged now (folded
+-- into the same PayMongo charge as any upfront courier fee); the rest is owed within 30
+-- days and always collected manually — there's no recurring/scheduled charge in
+-- PayMongo Checkout Sessions, so layaway_balance_php/due_at just track what's still
+-- owed for the owner to follow up on. total_php still holds the FULL order value either
+-- way (down payment + balance); layaway_balance_php is the portion of that not
+-- collected at checkout time.
 alter table orders add column if not exists payment_plan text not null default 'full'
   check (payment_plan in ('full', 'layaway'));
 alter table orders add column if not exists layaway_balance_php integer;
+-- Widened from integer once the layaway formula started producing centavos (the 5%
+-- fee/30% down payment math no longer lands on whole pesos). double precision (not
+-- numeric) so PostgREST/supabase-js keeps returning these as plain JS numbers instead
+-- of strings.
+alter table orders alter column total_php type double precision;
+alter table orders alter column layaway_balance_php type double precision;
 alter table orders add column if not exists layaway_balance_due_at timestamptz;
 
 create table if not exists units (

@@ -70,17 +70,20 @@ const COURIER_HINTS: Record<ShippingMethod, string> = {
 
 type PaymentPlan = "full" | "layaway";
 
-// Mirrors api/checkout.ts's computeLayawaySplit exactly — 30% down payment + 5%
-// reservation fee, computed together so the two numbers always sum to exactly 35% of
-// the subtotal (rounding each independently could leave a stray peso unaccounted for).
+// Mirrors api/checkout.ts's computeLayawaySplit exactly — a 5% reservation fee is added
+// on top of the subtotal to get the New Total, then the down payment due today is 30%
+// of that fee-inclusive New Total (not 30% of the plain subtotal). Done in integer
+// centavos so downPayment + balance always reconciles to exactly the New Total.
 function computeLayawaySplit(subtotalPhp: number) {
-  const downPaymentPhp = Math.round(subtotalPhp * 0.3);
-  const upfrontPhp = Math.round(subtotalPhp * 0.35);
+  const subtotalCentavos = Math.round(subtotalPhp * 100);
+  const feeCentavos = Math.round(subtotalCentavos * 0.05);
+  const newTotalCentavos = subtotalCentavos + feeCentavos;
+  const downPaymentCentavos = Math.round(newTotalCentavos * 0.3);
   return {
-    downPaymentPhp,
-    reservationFeePhp: upfrontPhp - downPaymentPhp,
-    upfrontPhp,
-    balancePhp: subtotalPhp - upfrontPhp,
+    reservationFeePhp: feeCentavos / 100,
+    newTotalPhp: newTotalCentavos / 100,
+    downPaymentPhp: downPaymentCentavos / 100,
+    balancePhp: (newTotalCentavos - downPaymentCentavos) / 100,
   };
 }
 
@@ -149,7 +152,7 @@ export default function Checkout({ open, onClose }: { open: boolean; onClose: ()
   // What actually gets charged through PayMongo right now — the full subtotal (+ any
   // upfront courier fee) for a full payment, or just the down payment + reservation fee
   // (+ upfront courier fee) for layaway. The layaway balance is never part of this.
-  const dueTodayPhp = (paymentPlan === "layaway" ? layawaySplit.upfrontPhp : subtotal) + shippingFeePhp;
+  const dueTodayPhp = (paymentPlan === "layaway" ? layawaySplit.downPaymentPhp : subtotal) + shippingFeePhp;
 
   // Fee depends only on the dropped pin, not the typed address text, so this only
   // re-fires when the pin actually moves — not on every keystroke elsewhere in the form.
@@ -338,8 +341,8 @@ export default function Checkout({ open, onClose }: { open: boolean; onClose: ()
                   >
                     <p className="font-display text-lg font-bold text-ink-900">Layaway</p>
                     <p className="text-xs text-ink-500">
-                      Reserve it for {formatPeso(layawaySplit.upfrontPhp)} now (30% down + 5% fee), pay the{" "}
-                      {formatPeso(layawaySplit.balancePhp)} balance within 30 days.
+                      Includes a 5% reservation fee. Reserve it for {formatPeso(layawaySplit.downPaymentPhp)} now
+                      (30%), pay the {formatPeso(layawaySplit.balancePhp)} balance within 30 days.
                     </p>
                   </button>
                 </div>
@@ -379,15 +382,15 @@ export default function Checkout({ open, onClose }: { open: boolean; onClose: ()
                       {paymentPlan === "layaway" && (
                         <>
                           <div className="mt-1.5 flex items-center justify-between">
-                            <span className="text-sm text-ink-500">Down payment (30%)</span>
-                            <span className="text-sm font-semibold text-ink-900">
-                              {formatPeso(layawaySplit.downPaymentPhp)}
-                            </span>
-                          </div>
-                          <div className="mt-1.5 flex items-center justify-between">
                             <span className="text-sm text-ink-500">Reservation fee (5%)</span>
                             <span className="text-sm font-semibold text-ink-900">
                               {formatPeso(layawaySplit.reservationFeePhp)}
+                            </span>
+                          </div>
+                          <div className="mt-1.5 flex items-center justify-between">
+                            <span className="text-sm text-ink-500">New total</span>
+                            <span className="text-sm font-semibold text-ink-900">
+                              {formatPeso(layawaySplit.newTotalPhp)}
                             </span>
                           </div>
                         </>
@@ -447,8 +450,8 @@ export default function Checkout({ open, onClose }: { open: boolean; onClose: ()
 
                     {paymentPlan === "layaway" ? (
                       <p className="text-xs text-ink-500">
-                        Down payment + reservation fee paid online via QR (QRPh) now. Balance due within 30 days —
-                        we'll DM you a payment breakdown.
+                        Down payment paid online via QR (QRPh) now. Balance due within 30 days — we'll DM you a
+                        payment breakdown.
                       </p>
                     ) : IN_PERSON_METHODS.has(shippingMethod) ? (
                       <p className="text-xs text-ink-500">

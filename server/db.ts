@@ -93,6 +93,7 @@ export type NewOrderInput = {
   shippingAddress: ShippingAddress;
   fulfillmentMethod: "online" | "cod";
   subtotalPhp: number;
+  totalPhp: number;
   status: OrderStatusValue;
   shippingMethod: ShippingMethod;
   shippingFeePhp: number;
@@ -114,7 +115,7 @@ export async function insertOrder(order: NewOrderInput): Promise<OrderRow> {
       fulfillment_method: order.fulfillmentMethod,
       subtotal_php: order.subtotalPhp,
       shipping_fee_php: order.shippingFeePhp,
-      total_php: order.subtotalPhp + order.shippingFeePhp,
+      total_php: order.totalPhp,
       status: order.status,
       shipping_method: order.shippingMethod,
       dropoff_lat: order.dropoffLat ?? null,
