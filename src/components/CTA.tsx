@@ -1,44 +1,39 @@
 import { AnimatePresence, motion } from "framer-motion";
-import { AlertCircle, ArrowRight, Check, MessageCircle, Send } from "lucide-react";
+import { AlertCircle, ArrowRight, Bell, Check, Sparkles } from "lucide-react";
 import { useState, type FormEvent } from "react";
+import { subscribe, unsubscribe } from "../lib/api";
 import { Reveal } from "./Reveal";
 
-const FORMSPREE_ENDPOINT = import.meta.env.VITE_FORMSPREE_ENDPOINT as string | undefined;
+type Mode = "subscribe" | "unsubscribe";
 
 export default function CTA() {
+  const [mode, setMode] = useState<Mode>("subscribe");
   const [email, setEmail] = useState("");
-  const [message, setMessage] = useState("");
   const [done, setDone] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  const switchMode = (next: Mode) => {
+    setMode(next);
+    setDone(false);
+    setError(null);
+  };
+
   const onSubmit = async (e: FormEvent) => {
     e.preventDefault();
-    if (!email.trim() || !message.trim() || submitting) return;
-
-    if (!FORMSPREE_ENDPOINT) {
-      console.error("VITE_FORMSPREE_ENDPOINT is not set — see .env.example");
-      setError("Messages aren't wired up yet — DM us on Instagram instead.");
-      return;
-    }
+    if (!email.trim() || submitting) return;
 
     setSubmitting(true);
     setError(null);
     try {
-      const res = await fetch(FORMSPREE_ENDPOINT, {
-        method: "POST",
-        headers: { Accept: "application/json", "Content-Type": "application/json" },
-        body: JSON.stringify({
-          _subject: "New message from digimarketph.com",
-          _replyto: email,
-          email,
-          message,
-        }),
-      });
-      if (!res.ok) throw new Error("request_failed");
+      if (mode === "subscribe") {
+        await subscribe(email.trim());
+      } else {
+        await unsubscribe(email.trim());
+      }
       setDone(true);
     } catch {
-      setError("Couldn't send that — please try again.");
+      setError(mode === "subscribe" ? "Couldn't join the list — please try again." : "Couldn't unsubscribe — please try again.");
     } finally {
       setSubmitting(false);
     }
@@ -58,19 +53,19 @@ export default function CTA() {
 
           <div className="relative mx-auto max-w-2xl">
             <span className="inline-flex items-center gap-2 rounded-full border border-cream-50/15 bg-cream-50/5 px-4 py-2 font-mono text-[11px] font-bold uppercase tracking-[0.22em] text-flash-400 backdrop-blur">
-              <MessageCircle className="h-3.5 w-3.5" />
-              Got a question?
+              <Sparkles className="h-3.5 w-3.5" />
+              Next drop: soon. As in, SOON.
             </span>
 
             <h2 className="mt-6 font-display text-4xl font-bold tracking-tight text-cream-50 sm:text-6xl">
-              We'd love to
+              Your 2004 era
               <br />
               <span className="bg-gradient-to-r from-flash-400 via-flash-300 to-flash-400 bg-clip-text text-transparent">
-                hear from you.
+                starts tonight.
               </span>
             </h2>
 
-            {/* Contact form */}
+            {/* Email capture */}
             <div className="mx-auto mt-9 max-w-lg">
               <AnimatePresence mode="wait">
                 {done ? (
@@ -85,14 +80,14 @@ export default function CTA() {
                     <span className="flex h-6 w-6 items-center justify-center rounded-full bg-lcd-500 text-ink-900">
                       <Check className="h-3.5 w-3.5" strokeWidth={3.5} />
                     </span>
-                    Message sent! We'll get back to you soon.
+                    {mode === "subscribe" ? "You're on the list! We'll email you when we drop." : "You're unsubscribed — sorry to see you go."}
                   </motion.div>
                 ) : (
                   <motion.form
-                    key="form"
+                    key={mode}
                     exit={{ opacity: 0, y: -10 }}
                     onSubmit={onSubmit}
-                    className="flex flex-col gap-3"
+                    className="flex flex-col gap-3 sm:flex-row"
                   >
                     <label htmlFor="cta-email" className="sr-only">
                       Email address
@@ -104,27 +99,21 @@ export default function CTA() {
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
                       placeholder="yourname@gmail.com"
-                      className="w-full rounded-full border border-cream-50/15 bg-cream-50/8 px-6 py-4 text-sm text-cream-50 placeholder:text-cream-100/35 backdrop-blur transition-colors duration-300 focus:border-flash-400/60 focus:outline-none"
-                    />
-                    <label htmlFor="cta-message" className="sr-only">
-                      Your message
-                    </label>
-                    <textarea
-                      id="cta-message"
-                      required
-                      rows={3}
-                      value={message}
-                      onChange={(e) => setMessage(e.target.value)}
-                      placeholder="Ask us anything — sizing, availability, anything at all."
-                      className="w-full resize-none rounded-3xl border border-cream-50/15 bg-cream-50/8 px-6 py-4 text-sm text-cream-50 placeholder:text-cream-100/35 backdrop-blur transition-colors duration-300 focus:border-flash-400/60 focus:outline-none"
+                      className="w-full flex-1 rounded-full border border-cream-50/15 bg-cream-50/8 px-6 py-4 text-sm text-cream-50 placeholder:text-cream-100/35 backdrop-blur transition-colors duration-300 focus:border-flash-400/60 focus:outline-none"
                     />
                     <button
                       type="submit"
                       disabled={submitting}
                       className="btn-shine group inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-full bg-flash-500 px-7 py-4 text-sm font-semibold text-cream-50 shadow-xl shadow-flash-500/35 transition-all duration-300 hover:-translate-y-0.5 hover:bg-flash-600 disabled:pointer-events-none disabled:opacity-60"
                     >
-                      <Send className="h-4 w-4" />
-                      {submitting ? "Sending…" : "Send message"}
+                      <Bell className="h-4 w-4" />
+                      {submitting
+                        ? mode === "subscribe"
+                          ? "Joining…"
+                          : "Removing…"
+                        : mode === "subscribe"
+                          ? "Notify me"
+                          : "Unsubscribe"}
                       <ArrowRight className="h-4 w-4 transition-transform duration-300 group-hover:translate-x-1" />
                     </button>
                   </motion.form>
@@ -137,7 +126,14 @@ export default function CTA() {
                 </p>
               )}
               <p className="mt-4 font-mono text-[10px] font-bold uppercase tracking-[0.2em] text-cream-100/35">
-                We'll reply as soon as we can.
+                No spam. Just drops.{" "}
+                <button
+                  type="button"
+                  onClick={() => switchMode(mode === "subscribe" ? "unsubscribe" : "subscribe")}
+                  className="underline decoration-dotted underline-offset-2 hover:text-cream-100/60"
+                >
+                  {mode === "subscribe" ? "Unsubscribe anytime." : "Back to subscribing."}
+                </button>
               </p>
             </div>
           </div>

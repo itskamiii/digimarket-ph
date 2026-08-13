@@ -249,3 +249,20 @@ export async function getOutstandingLayawayOrders(): Promise<OrderRow[]> {
   if (error) throw error;
   return data as OrderRow[];
 }
+
+// Re-subscribing an email that's already on the list is a silent no-op, not an error —
+// the unique constraint on subscribers.email is what makes this idempotent.
+export async function addSubscriber(email: string): Promise<void> {
+  const { error } = await getSupabase()
+    .from("subscribers")
+    .upsert({ email }, { onConflict: "email", ignoreDuplicates: true });
+  if (error) throw error;
+}
+
+// Always succeeds whether or not the email was actually on the list — the caller
+// (api/unsubscribe.ts) treats both cases as "you're unsubscribed" so this can't be used
+// to probe which emails are subscribed.
+export async function removeSubscriber(email: string): Promise<void> {
+  const { error } = await getSupabase().from("subscribers").delete().eq("email", email);
+  if (error) throw error;
+}

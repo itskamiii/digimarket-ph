@@ -16,10 +16,11 @@ Instagram: [@digimarket_ph](https://instagram.com/digimarket_ph)
 
 - Live catalog synced from Supabase — units are one-of-a-kind, kits allow quantity
 - Courier-first checkout: LBC, Lalamove, DHL, Meet up, or Pick up, each with its own payment options
-- Full payment or Layaway (30% down + 5% reservation fee now, 65% balance within 30 days, paid later via a real follow-up link)
+- Full payment or Layaway (5% reservation fee added to the price, 30% of that new total due now, balance within 30 days, paid later via a real follow-up link)
 - Atomic inventory reservation so two customers can never buy the same one-of-a-kind unit
 - Searchable PH address entry with province/city lookup and postal code auto-fill
 - One email per order telling you exactly what still needs manual follow-up — courier booking, DHL rate quoting, layaway balance reminders
+- Real collection-drop email list (subscribe/unsubscribe both self-serve) — no third-party mailing list service
 
 ## Project structure
 
@@ -32,6 +33,7 @@ api/                          Vercel serverless functions
   order-status.ts               Order lookup (unauthenticated, minimal data)
   pay-balance-status.ts         Layaway balance lookup (unauthenticated, minimal data)
   products.ts                   Catalog feed
+  subscribe.ts, unsubscribe.ts  Collection-drop email list
 
 server/                       Shared server-side logic imported by api/ functions
   db.ts, supabase.ts, paymongo.ts, lalamove.ts, notify.ts, rateLimit.ts, types.ts

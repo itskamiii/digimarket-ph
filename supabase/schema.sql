@@ -111,6 +111,15 @@ create table if not exists order_items (
 );
 create index if not exists order_items_order_id_idx on order_items(order_id);
 
+-- Collection-drop email list — separate from customer PII in orders. `unique` on email
+-- doubles as the subscribe endpoint's dedupe (re-subscribing an already-present email is
+-- just a no-op upsert, not an error).
+create table if not exists subscribers (
+  id uuid primary key default gen_random_uuid(),
+  email text not null unique,
+  created_at timestamptz not null default now()
+);
+
 -- Unauthenticated + unlimited checkout attempts would let anyone perpetually re-reserve
 -- a one-of-a-kind unit forever (re-triggering checkout every ~15 min, right as each
 -- reservation is about to lapse) with zero cost to them — a standing denial-of-inventory
@@ -140,6 +149,7 @@ alter table orders enable row level security;
 alter table units enable row level security;
 alter table kits enable row level security;
 alter table order_items enable row level security;
+alter table subscribers enable row level security;
 
 -- Atomically claim units for an order. Only "wins" rows that are currently available,
 -- or reserved-but-expired (so a stale reservation never blocks a second buyer even in

@@ -278,6 +278,6 @@ export const FOOTER_LINKS = {
     { label: "FAQ", href: "#faq" },
     { label: "Shipping", href: "#faq" },
     { label: "Policies", href: "#faq" },
-    { label: "Contact Us", href: "#cta" },
+    { label: "Contact Us", href: "#faq" },
   ],
 };

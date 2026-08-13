@@ -106,6 +106,26 @@ export async function fetchPayBalanceStatus(orderId: string): Promise<PayBalance
   };
 }
 
+export async function subscribe(email: string): Promise<void> {
+  const res = await fetch("/api/subscribe", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ email }),
+  });
+  const json = (await res.json().catch(() => ({}))) as { error?: string };
+  if (!res.ok) throw new Error(json.error ?? "Couldn't join the list — please try again.");
+}
+
+export async function unsubscribe(email: string): Promise<void> {
+  const res = await fetch("/api/unsubscribe", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ email }),
+  });
+  const json = (await res.json().catch(() => ({}))) as { error?: string };
+  if (!res.ok) throw new Error(json.error ?? "Couldn't unsubscribe — please try again.");
+}
+
 export async function createPayBalanceCheckout(orderId: string): Promise<{ redirect: string }> {
   const res = await fetch("/api/checkout/pay-balance", {
     method: "POST",
