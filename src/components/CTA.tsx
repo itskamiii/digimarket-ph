@@ -2,6 +2,7 @@ import { AnimatePresence, motion } from "framer-motion";
 import { AlertCircle, ArrowRight, Bell, Check, Sparkles } from "lucide-react";
 import { useState, type FormEvent } from "react";
 import { subscribe, unsubscribe } from "../lib/api";
+import { getNativeLanguage } from "../lib/languages";
 import { Reveal } from "./Reveal";
 
 type Mode = "subscribe" | "unsubscribe";
@@ -27,7 +28,7 @@ export default function CTA() {
     setError(null);
     try {
       if (mode === "subscribe") {
-        await subscribe(email.trim());
+        await subscribe(email.trim(), getNativeLanguage() ?? undefined);
       } else {
         await unsubscribe(email.trim());
       }

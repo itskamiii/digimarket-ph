@@ -47,6 +47,17 @@ function isValidEmail(email: string): boolean {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
 }
 
+// Display-only field — the owner reads it to decide what language to reply in, and no
+// logic anywhere keys off it. So a bad value can't do anything worse than look odd in an
+// email, and it's dropped rather than 400'd (never fail a real sale over a cosmetic
+// field). Only the shape is enforced: a short plain string.
+function cleanNativeLanguage(value: unknown): string | null {
+  if (typeof value !== "string") return null;
+  const trimmed = value.trim();
+  if (!trimmed || trimmed.length > 40) return null;
+  return trimmed;
+}
+
 function isValidShipping(value: unknown): value is ShippingAddress {
   if (!value || typeof value !== "object") return false;
   const addr = value as Record<string, unknown>;
@@ -107,6 +118,8 @@ export async function POST(request: Request) {
     // "cod", but a layaway down payment on those still goes through PayMongo first).
     return Response.json({ error: "layaway_requires_online_payment" }, { status: 400 });
   }
+
+  const nativeLanguage = cleanNativeLanguage(body.nativeLanguage);
 
   const shippingMethod = body.shippingMethod ?? "lbc";
   if (!["lbc", "lalamove", "dhl", "meetup", "pickup"].includes(shippingMethod)) {
@@ -208,6 +221,7 @@ export async function POST(request: Request) {
     paymentPlan,
     layawayBalancePhp: layawaySplit?.balancePhp,
     layawayBalanceDueAt,
+    nativeLanguage,
   });
 
   try {
@@ -244,6 +258,7 @@ export async function POST(request: Request) {
         paymentPlan: "full",
         items: orderItems.map((i) => ({ name: i.name, price: i.price, quantity: i.quantity })),
         totalPhp: order.total_php,
+        nativeLanguage,
       });
       return Response.json({ orderId: order.id, redirect: null });
     }

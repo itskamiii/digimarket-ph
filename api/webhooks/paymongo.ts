@@ -111,6 +111,7 @@ export async function POST(request: Request) {
         layawayBalanceDueAt: order.layaway_balance_due_at,
         items: orderItems.map((i) => ({ name: i.name_snapshot, price: i.price_php_snapshot, quantity: i.quantity })),
         totalPhp: order.total_php,
+        nativeLanguage: order.native_language,
       });
       // No automatic Lalamove booking here — for a paid-online Lalamove order, the owner
       // books the actual delivery manually on their phone using the dropoff pin already

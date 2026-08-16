@@ -68,6 +68,10 @@ export type CheckoutRequestBody = {
   shippingMethod?: ShippingMethod; // defaults to "lbc" server-side when omitted
   dropoffPin?: LatLng; // required when shippingMethod === "lalamove"
   paymentPlan?: PaymentPlan; // defaults to "full" server-side when omitted
+  // English name of the language the customer picked on their first visit (see
+  // src/lib/languages.ts) — informational only, so the owner knows what language to reply
+  // in. Absent when they skipped the prompt or cleared their browser storage.
+  nativeLanguage?: string;
 };
 
 export type OrderRow = {
@@ -93,6 +97,7 @@ export type OrderRow = {
   payment_plan: PaymentPlan;
   layaway_balance_php: number | null;
   layaway_balance_due_at: string | null;
+  native_language: string | null;
   notes: string | null;
 };
 

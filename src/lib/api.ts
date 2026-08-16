@@ -106,11 +106,11 @@ export async function fetchPayBalanceStatus(orderId: string): Promise<PayBalance
   };
 }
 
-export async function subscribe(email: string): Promise<void> {
+export async function subscribe(email: string, nativeLanguage?: string): Promise<void> {
   const res = await fetch("/api/subscribe", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ email }),
+    body: JSON.stringify({ email, nativeLanguage }),
   });
   const json = (await res.json().catch(() => ({}))) as { error?: string };
   if (!res.ok) throw new Error(json.error ?? "Couldn't join the list — please try again.");

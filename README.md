@@ -21,6 +21,7 @@ Instagram: [@digimarket_ph](https://instagram.com/digimarket_ph)
 - Searchable PH address entry with province/city lookup and postal code auto-fill
 - One email per order telling you exactly what still needs manual follow-up — courier booking, DHL rate quoting, layaway balance reminders
 - Real collection-drop email list (subscribe/unsubscribe both self-serve) — no third-party mailing list service
+- First-visit language prompt for international buyers — the answer rides along with their order so you know what language to reply in
 
 ## Project structure
 

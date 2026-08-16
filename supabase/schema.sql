@@ -120,6 +120,12 @@ create table if not exists subscribers (
   created_at timestamptz not null default now()
 );
 
+-- English name of the language the visitor picked on their first load (see
+-- src/components/LanguagePrompt.tsx). Purely so the owner knows what language to reply
+-- in — nothing reads it programmatically, and it's null whenever the prompt was skipped.
+alter table orders add column if not exists native_language text;
+alter table subscribers add column if not exists native_language text;
+
 -- Unauthenticated + unlimited checkout attempts would let anyone perpetually re-reserve
 -- a one-of-a-kind unit forever (re-triggering checkout every ~15 min, right as each
 -- reservation is about to lapse) with zero cost to them — a standing denial-of-inventory

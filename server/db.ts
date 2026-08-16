@@ -102,6 +102,7 @@ export type NewOrderInput = {
   paymentPlan: PaymentPlan;
   layawayBalancePhp?: number | null;
   layawayBalanceDueAt?: string | null;
+  nativeLanguage?: string | null;
 };
 
 export async function insertOrder(order: NewOrderInput): Promise<OrderRow> {
@@ -123,6 +124,7 @@ export async function insertOrder(order: NewOrderInput): Promise<OrderRow> {
       payment_plan: order.paymentPlan,
       layaway_balance_php: order.layawayBalancePhp ?? null,
       layaway_balance_due_at: order.layawayBalanceDueAt ?? null,
+      native_language: order.nativeLanguage ?? null,
     })
     .select()
     .single();
@@ -251,11 +253,13 @@ export async function getOutstandingLayawayOrders(): Promise<OrderRow[]> {
 }
 
 // Re-subscribing an email that's already on the list is a silent no-op, not an error —
-// the unique constraint on subscribers.email is what makes this idempotent.
-export async function addSubscriber(email: string): Promise<void> {
+// the unique constraint on subscribers.email is what makes this idempotent. That also
+// means an existing subscriber's stored language is never overwritten by a later
+// re-subscribe, which is fine: it's the same person either way.
+export async function addSubscriber(email: string, nativeLanguage: string | null = null): Promise<void> {
   const { error } = await getSupabase()
     .from("subscribers")
-    .upsert({ email }, { onConflict: "email", ignoreDuplicates: true });
+    .upsert({ email, native_language: nativeLanguage }, { onConflict: "email", ignoreDuplicates: true });
   if (error) throw error;
 }
 

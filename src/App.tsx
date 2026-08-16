@@ -7,6 +7,7 @@ import FAQ from "./components/FAQ";
 import Features from "./components/Features";
 import Footer from "./components/Footer";
 import Hero from "./components/Hero";
+import LanguagePrompt from "./components/LanguagePrompt";
 import Navbar from "./components/Navbar";
 import OrderStatus from "./components/OrderStatus";
 import PayBalance from "./components/PayBalance";
@@ -50,6 +51,7 @@ function AppShell() {
       <Checkout open={checkoutOpen} onClose={() => setCheckoutOpen(false)} />
       <OrderStatus />
       <PayBalance />
+      <LanguagePrompt />
       <Analytics />
     </div>
   );

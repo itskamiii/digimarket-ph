@@ -76,6 +76,7 @@ export async function notifyNewOrder(params: {
   paymentPlan: PaymentPlan;
   layawayBalancePhp?: number | null;
   layawayBalanceDueAt?: string | null;
+  nativeLanguage?: string | null;
 }): Promise<void> {
   const addr = params.shippingAddress;
   const shippingLine = [addr.line1, addr.line2, addr.city, addr.province, addr.postalCode]
@@ -107,6 +108,9 @@ export async function notifyNewOrder(params: {
       paymentPlan: params.paymentPlan,
       items: itemsLine,
       total: peso(params.totalPhp),
+      // Only included when they actually picked one — an absent field reads better in
+      // Formspree's table than an empty/"unknown" column on every domestic order.
+      ...(params.nativeLanguage ? { nativeLanguage: params.nativeLanguage } : {}),
       ...(action ? { actionNeeded: action } : {}),
     },
     "new-order notification"

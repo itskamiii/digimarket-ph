@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState, type FormEvent } from "react";
 import { useCart } from "../context/CartContext";
 import { CheckoutUnavailableError, createCheckout, fetchLalamoveQuote } from "../lib/api";
 import { formatPeso } from "../lib/format";
+import { getNativeLanguage } from "../lib/languages";
 import phAddresses from "../lib/ph-addresses.json";
 import LalamovePinPicker from "./LalamovePinPicker";
 import { EASE } from "./Reveal";
@@ -235,6 +236,9 @@ export default function Checkout({ open, onClose }: { open: boolean; onClose: ()
         shippingMethod,
         dropoffPin: shippingMethod === "lalamove" ? dropoffPin! : undefined,
         paymentPlan: paymentPlan ?? "full",
+        // Picked on their first visit (LanguagePrompt.tsx) — rides along so the owner
+        // knows what language to reply in. null when they skipped the prompt.
+        nativeLanguage: getNativeLanguage() ?? undefined,
       });
 
       if (result.redirect) {
