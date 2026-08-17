@@ -77,20 +77,8 @@ function CameraCard({ item, onViewInfo }: { item: CatalogItem; onViewInfo: (item
           )}
           <div className="absolute inset-0 bg-gradient-to-t from-ink-900/25 via-transparent to-transparent opacity-0 transition-opacity duration-500 group-hover:opacity-100" />
 
-          {/* Collection/promo ribbon — its own row, top-right. When present, the badges
-              column below is pushed down a row (top-14 instead of top-4) so a long
-              "Best for" line starts fresh at the left edge instead of wrapping under it —
-              they used to share a row and the ribbon got painted over. */}
-          {item.badge && (
-            <span className="absolute right-4 top-4 rounded-full bg-flash-500 px-3 py-1.5 font-mono text-[10px] font-bold uppercase tracking-[0.14em] text-cream-50 shadow-lg shadow-flash-500/30">
-              {item.badge}
-            </span>
-          )}
-
           {/* Badges */}
-          <div
-            className={`absolute left-4 right-4 flex flex-col items-start gap-2 ${item.badge ? "top-14" : "top-4"}`}
-          >
+          <div className="absolute left-4 right-4 top-4 flex flex-col items-start gap-2">
             {item.bestFor && (
               <span className="rounded-xl bg-ink-900/70 px-2.5 py-1.5 text-[10px] leading-snug text-cream-100 backdrop-blur">
                 <span className="font-bold uppercase tracking-wide text-flash-400">Best for </span>
@@ -292,7 +280,7 @@ function getBrandBucket(name: string): string {
 // its own; Showcase's heading covers it.
 export function CatalogList({ products }: { products: ProductsState }) {
   const [active, setActive] = useState<"camcorders" | "digicams">("camcorders");
-  const [brandFilter, setBrandFilter] = useState<string>("all");
+  const [catalogFilter, setCatalogFilter] = useState<string>("all");
   const [infoItem, setInfoItem] = useState<CatalogItem | null>(null);
 
   const camcorders = products.status === "ready" ? products.data.camcorders : [];
@@ -301,14 +289,24 @@ export function CatalogList({ products }: { products: ProductsState }) {
   const digicamBrands = [...KNOWN_DIGICAM_BRANDS, "Others"].filter((b) =>
     digicams.some((item) => getBrandBucket(item.name) === b)
   );
+  // Collection chips (e.g. "28th Collection") come straight from units.badge — same
+  // self-adapting pattern as brands: a chip only appears once a unit with that badge
+  // actually exists, so future collections show up here with zero code changes.
+  const digicamCollections = [...new Set(digicams.map((item) => item.badge).filter((b): b is string => Boolean(b)))];
   const filteredDigicams =
-    brandFilter === "all" ? digicams : digicams.filter((item) => getBrandBucket(item.name) === brandFilter);
+    catalogFilter === "all"
+      ? digicams
+      : digicams.filter((item) =>
+          digicamCollections.includes(catalogFilter)
+            ? item.badge === catalogFilter
+            : getBrandBucket(item.name) === catalogFilter
+        );
 
   const activeItems = active === "camcorders" ? camcorders : filteredDigicams;
 
   const selectTab = (tab: "camcorders" | "digicams") => {
     setActive(tab);
-    setBrandFilter("all");
+    setCatalogFilter("all");
   };
 
   return (
@@ -335,20 +333,20 @@ export function CatalogList({ products }: { products: ProductsState }) {
         </Reveal>
       </div>
 
-      {active === "digicams" && digicamBrands.length > 0 && (
+      {active === "digicams" && (digicamCollections.length > 0 || digicamBrands.length > 0) && (
         <Reveal delay={0.2} className="mt-3 flex flex-wrap gap-1.5">
-          {["all", ...digicamBrands].map((b) => (
+          {["all", ...digicamCollections, ...digicamBrands].map((f) => (
             <button
-              key={b}
+              key={f}
               type="button"
-              onClick={() => setBrandFilter(b)}
+              onClick={() => setCatalogFilter(f)}
               className={`rounded-full border px-3 py-1.5 font-mono text-[10px] font-bold uppercase tracking-[0.12em] transition-colors duration-300 ${
-                brandFilter === b
+                catalogFilter === f
                   ? "border-flash-500 bg-flash-500 text-cream-50"
                   : "border-ink-900/10 text-ink-400 hover:border-flash-500 hover:text-flash-500"
               }`}
             >
-              {b === "all" ? "All" : b}
+              {f === "all" ? "All" : f}
             </button>
           ))}
         </Reveal>

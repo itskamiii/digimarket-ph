@@ -141,7 +141,7 @@ export default function Hero({ products }: { products: ProductsState }) {
           <div className="relative overflow-hidden rounded-[2.5rem] border border-ink-900/10 bg-cream-50 shadow-[0_40px_90px_-30px_rgba(27,23,18,0.45)]">
             <img
               src={heroCamera}
-              alt="Flatlay of the 28th Collection — eight vintage digital cameras styled by Digimarket_PH"
+              alt="Flatlay of the 28th Collection — eight vintage digital cameras with their original boxes, styled by Digimarket_PH"
               className="aspect-[4/5] w-full object-cover"
               width={880}
               height={1100}
