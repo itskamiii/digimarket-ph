@@ -77,6 +77,14 @@ function CameraCard({ item, onViewInfo }: { item: CatalogItem; onViewInfo: (item
           )}
           <div className="absolute inset-0 bg-gradient-to-t from-ink-900/25 via-transparent to-transparent opacity-0 transition-opacity duration-500 group-hover:opacity-100" />
 
+          {/* Collection/promo ribbon — separate corner from the badges column below so a
+              long "Best for" line never wraps under it. */}
+          {item.badge && (
+            <span className="absolute right-4 top-4 rounded-full bg-flash-500 px-3 py-1.5 font-mono text-[10px] font-bold uppercase tracking-[0.14em] text-cream-50 shadow-lg shadow-flash-500/30">
+              {item.badge}
+            </span>
+          )}
+
           {/* Badges */}
           <div className="absolute left-4 right-4 top-4 flex flex-col items-start gap-2">
             {item.bestFor && (

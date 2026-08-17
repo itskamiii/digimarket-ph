@@ -1,6 +1,6 @@
 import { motion, useReducedMotion } from "framer-motion";
 import { ArrowRight, Play, Sparkles, Zap } from "lucide-react";
-import heroCamera from "../assets/27th-collection.jpg";
+import heroCamera from "../assets/28th-collection.jpg";
 import { getLiveUnitsCount, type ProductsState } from "../hooks/useProducts";
 import { EASE } from "./Reveal";
 
@@ -141,7 +141,7 @@ export default function Hero({ products }: { products: ProductsState }) {
           <div className="relative overflow-hidden rounded-[2.5rem] border border-ink-900/10 bg-cream-50 shadow-[0_40px_90px_-30px_rgba(27,23,18,0.45)]">
             <img
               src={heroCamera}
-              alt="Flatlay of the 27th Collection — ten vintage digital cameras with a leather case, styled by Digimarket_PH"
+              alt="Flatlay of the 28th Collection — eight vintage digital cameras styled by Digimarket_PH"
               className="aspect-[4/5] w-full object-cover"
               width={880}
               height={1100}
@@ -157,7 +157,7 @@ export default function Hero({ products }: { products: ProductsState }) {
           >
             <div className="animate-float rounded-2xl glass px-4 py-3 shadow-xl shadow-ink-900/10">
               <p className="font-mono text-[9px] font-bold uppercase tracking-[0.2em] text-ink-400">Collection</p>
-              <p className="mt-0.5 font-display text-sm font-bold text-ink-900">27th</p>
+              <p className="mt-0.5 font-display text-sm font-bold text-ink-900">28th</p>
             </div>
           </motion.div>
 
@@ -189,7 +189,7 @@ export default function Hero({ products }: { products: ProductsState }) {
                 <p className="font-mono text-[9px] font-bold uppercase tracking-[0.2em] text-cream-100/60">
                   Price starts from:
                 </p>
-                <p className="font-display text-lg font-bold leading-none">₱4,599</p>
+                <p className="font-display text-lg font-bold leading-none">₱6,599</p>
               </div>
             </div>
           </motion.div>
