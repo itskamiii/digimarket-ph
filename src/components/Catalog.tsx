@@ -77,8 +77,10 @@ function CameraCard({ item, onViewInfo }: { item: CatalogItem; onViewInfo: (item
           )}
           <div className="absolute inset-0 bg-gradient-to-t from-ink-900/25 via-transparent to-transparent opacity-0 transition-opacity duration-500 group-hover:opacity-100" />
 
-          {/* Collection/promo ribbon — separate corner from the badges column below so a
-              long "Best for" line never wraps under it. */}
+          {/* Collection/promo ribbon — its own row, top-right. When present, the badges
+              column below is pushed down a row (top-14 instead of top-4) so a long
+              "Best for" line starts fresh at the left edge instead of wrapping under it —
+              they used to share a row and the ribbon got painted over. */}
           {item.badge && (
             <span className="absolute right-4 top-4 rounded-full bg-flash-500 px-3 py-1.5 font-mono text-[10px] font-bold uppercase tracking-[0.14em] text-cream-50 shadow-lg shadow-flash-500/30">
               {item.badge}
@@ -86,7 +88,9 @@ function CameraCard({ item, onViewInfo }: { item: CatalogItem; onViewInfo: (item
           )}
 
           {/* Badges */}
-          <div className="absolute left-4 right-4 top-4 flex flex-col items-start gap-2">
+          <div
+            className={`absolute left-4 right-4 flex flex-col items-start gap-2 ${item.badge ? "top-14" : "top-4"}`}
+          >
             {item.bestFor && (
               <span className="rounded-xl bg-ink-900/70 px-2.5 py-1.5 text-[10px] leading-snug text-cream-100 backdrop-blur">
                 <span className="font-bold uppercase tracking-wide text-flash-400">Best for </span>
