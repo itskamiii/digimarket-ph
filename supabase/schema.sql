@@ -90,6 +90,10 @@ alter table units add column if not exists description text;
 -- image_url — see CameraCard in src/components/Catalog.tsx. Null is a normal, handled
 -- state (older/removed units without a back photo just never flip).
 alter table units add column if not exists image_back_url text;
+-- Real photos taken BY the camera (not photos of it) — shown via "View Sample Photos" in
+-- the unit info modal as a swipeable gallery. Standardized to exactly 4 per unit where
+-- available (see scripts/tmp-upload-samples.mjs); null/empty for units without any yet.
+alter table units add column if not exists sample_photo_urls text[];
 
 -- Migration: the 3x-installment feature was fabricated template content, not a real
 -- offer — dropped from orders/kits along with the checkout UI that set/read it.

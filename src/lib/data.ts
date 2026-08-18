@@ -141,6 +141,7 @@ export type CatalogItem = {
   availability: Availability;
   image?: string;
   imageBack?: string;
+  samplePhotos?: string[];
   tint?: string;
   description?: string;
 };

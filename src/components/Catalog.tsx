@@ -1,6 +1,6 @@
 import { AnimatePresence, motion } from "framer-motion";
-import { ArrowUpRight, Check, ImageOff, Plus, X } from "lucide-react";
-import { useRef, useState } from "react";
+import { ArrowUpRight, Check, ImageOff, Images, Plus, X } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
 import { useCart } from "../context/CartContext";
 import type { ProductsState } from "../hooks/useProducts";
 import type { Availability, CatalogItem } from "../lib/data";
@@ -228,7 +228,15 @@ function CameraCard({ item, onViewInfo }: { item: CatalogItem; onViewInfo: (item
   );
 }
 
-function UnitInfoModal({ item, onClose }: { item: CatalogItem | null; onClose: () => void }) {
+function UnitInfoModal({
+  item,
+  onClose,
+  onViewSamples,
+}: {
+  item: CatalogItem | null;
+  onClose: () => void;
+  onViewSamples: (item: CatalogItem) => void;
+}) {
   const { addItem, isInCart } = useCart();
   const isAvailable = item?.availability === "available";
   const inBag = item ? isInCart("unit", item.id) : false;
@@ -322,9 +330,102 @@ function UnitInfoModal({ item, onClose }: { item: CatalogItem | null; onClose: (
                   )}
                 </button>
               )}
+
+              {item.samplePhotos && item.samplePhotos.length > 0 && (
+                <button
+                  type="button"
+                  onClick={() => onViewSamples(item)}
+                  className="mt-3 flex w-full items-center justify-center gap-2 rounded-full border border-ink-900/12 px-6 py-4 text-sm font-semibold text-ink-700 transition-all duration-300 hover:border-ink-900/25 hover:bg-ink-900/4"
+                >
+                  <Images className="h-4 w-4" />
+                  View sample photos
+                </button>
+              )}
             </div>
           </motion.div>
         </>
+      )}
+    </AnimatePresence>
+  );
+}
+
+// Full-screen swipeable gallery of real photos taken BY the camera (not of it) — opened
+// from "View sample photos" in UnitInfoModal. Paginated like an Instagram post carousel:
+// drag/swipe snaps to the next or previous photo (not a continuous scroll), with dot
+// indicators below. Stacks on top of UnitInfoModal (higher z-index) rather than closing
+// it, so dismissing this returns to the info modal instead of the whole catalog.
+function SamplePhotoViewer({ item, onClose }: { item: CatalogItem | null; onClose: () => void }) {
+  const [index, setIndex] = useState(0);
+  const photos = item?.samplePhotos ?? [];
+
+  useEffect(() => {
+    setIndex(0);
+  }, [item?.id]);
+
+  const goTo = (i: number) => setIndex(Math.min(Math.max(i, 0), photos.length - 1));
+
+  return (
+    <AnimatePresence>
+      {item && photos.length > 0 && (
+        <motion.div
+          key="sample-viewer"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          transition={{ duration: 0.25, ease: EASE }}
+          role="dialog"
+          aria-modal="true"
+          aria-label={`${item.name} — sample photos`}
+          className="fixed inset-0 z-[110] flex flex-col bg-ink-950/97"
+        >
+          <div className="flex items-center justify-between px-5 pb-3 pt-[max(1.25rem,env(safe-area-inset-top))]">
+            <p className="truncate pr-4 text-sm font-semibold text-cream-50">{item.name}</p>
+            <button
+              type="button"
+              onClick={onClose}
+              aria-label="Close sample photos"
+              className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-cream-50/10 text-cream-50 transition-colors hover:bg-cream-50/20"
+            >
+              <X className="h-5 w-5" />
+            </button>
+          </div>
+
+          <div className="relative flex-1 overflow-hidden">
+            <AnimatePresence initial={false} mode="wait">
+              <motion.img
+                key={index}
+                src={photos[index]}
+                alt={`${item.name} — sample photo ${index + 1} of ${photos.length}`}
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                transition={{ duration: 0.2 }}
+                drag="x"
+                dragConstraints={{ left: 0, right: 0 }}
+                dragElastic={0.7}
+                onDragEnd={(_, info) => {
+                  if (info.offset.x < -60) goTo(index + 1);
+                  else if (info.offset.x > 60) goTo(index - 1);
+                }}
+                className="absolute inset-0 h-full w-full touch-pan-y object-contain"
+              />
+            </AnimatePresence>
+          </div>
+
+          <div className="flex items-center justify-center gap-1.5 py-5">
+            {photos.map((_, i) => (
+              <button
+                key={i}
+                type="button"
+                onClick={() => goTo(i)}
+                aria-label={`Go to sample photo ${i + 1}`}
+                className={`h-1.5 rounded-full transition-all duration-300 ${
+                  i === index ? "w-5 bg-flash-500" : "w-1.5 bg-cream-50/30"
+                }`}
+              />
+            ))}
+          </div>
+        </motion.div>
       )}
     </AnimatePresence>
   );
@@ -346,6 +447,7 @@ export function CatalogList({ products }: { products: ProductsState }) {
   const [active, setActive] = useState<"camcorders" | "digicams">("camcorders");
   const [catalogFilter, setCatalogFilter] = useState<string>("all");
   const [infoItem, setInfoItem] = useState<CatalogItem | null>(null);
+  const [samplePhotosItem, setSamplePhotosItem] = useState<CatalogItem | null>(null);
 
   const camcorders = products.status === "ready" ? products.data.camcorders : [];
   const digicams = products.status === "ready" ? products.data.digicams : [];
@@ -438,7 +540,8 @@ export function CatalogList({ products }: { products: ProductsState }) {
         </div>
       )}
 
-      <UnitInfoModal item={infoItem} onClose={() => setInfoItem(null)} />
+      <UnitInfoModal item={infoItem} onClose={() => setInfoItem(null)} onViewSamples={setSamplePhotosItem} />
+      <SamplePhotoViewer item={samplePhotosItem} onClose={() => setSamplePhotosItem(null)} />
     </div>
   );
 }
