@@ -11,6 +11,7 @@ function toCatalogItem(unit: UnitRow) {
     bestFor: unit.best_for ?? undefined,
     availability: unit.status,
     image: unit.image_url ?? undefined,
+    imageBack: unit.image_back_url ?? undefined,
     tint: unit.tint ?? "from-cream-200",
     description: unit.description ?? undefined,
   };

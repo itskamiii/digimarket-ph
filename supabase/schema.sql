@@ -86,6 +86,10 @@ create index if not exists units_reserved_order_idx on units(reserved_order_id);
 -- already get these from the CREATE TABLE above).
 alter table units add column if not exists best_for text;
 alter table units add column if not exists description text;
+-- Shown on hover (desktop) / press-and-hold (mobile) over a catalog card, in place of
+-- image_url — see CameraCard in src/components/Catalog.tsx. Null is a normal, handled
+-- state (older/removed units without a back photo just never flip).
+alter table units add column if not exists image_back_url text;
 
 -- Migration: the 3x-installment feature was fabricated template content, not a real
 -- offer — dropped from orders/kits along with the checkout UI that set/read it.

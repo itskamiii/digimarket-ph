@@ -140,6 +140,7 @@ export type CatalogItem = {
   bestFor?: string;
   availability: Availability;
   image?: string;
+  imageBack?: string;
   tint?: string;
   description?: string;
 };

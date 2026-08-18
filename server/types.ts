@@ -13,6 +13,7 @@ export type UnitRow = {
   description: string | null;
   is_featured: boolean;
   image_url: string | null;
+  image_back_url: string | null;
   tint: string | null;
   status: UnitStatus;
   reservation_expires_at: string | null;

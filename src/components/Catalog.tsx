@@ -1,6 +1,6 @@
 import { AnimatePresence, motion } from "framer-motion";
 import { ArrowUpRight, Check, ImageOff, Plus, X } from "lucide-react";
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { useCart } from "../context/CartContext";
 import type { ProductsState } from "../hooks/useProducts";
 import type { Availability, CatalogItem } from "../lib/data";
@@ -40,6 +40,49 @@ function CameraCard({ item, onViewInfo }: { item: CatalogItem; onViewInfo: (item
   const isUnavailable = item.availability !== "available";
   const inBag = isInCart("unit", item.id);
 
+  // Flip to the back photo on hover (mouse) or press-and-hold (touch). Pointer Events
+  // unify both input types in one handler set — touch devices do fire synthetic mouse
+  // events on tap, which would otherwise flash the back photo for an instant on every
+  // tap, so every handler below checks pointerType rather than assuming which fired.
+  const [flipped, setFlipped] = useState(false);
+  const hasBack = Boolean(item.imageBack);
+  const holdTimerRef = useRef<number | null>(null);
+  // Distinguishes "held past the threshold" from "quick tap" so the click handler can
+  // skip opening the info modal for a hold, without affecting a normal tap's click.
+  const holdTriggeredRef = useRef(false);
+
+  const clearHoldTimer = () => {
+    if (holdTimerRef.current !== null) {
+      window.clearTimeout(holdTimerRef.current);
+      holdTimerRef.current = null;
+    }
+  };
+  const endHold = () => {
+    clearHoldTimer();
+    if (holdTriggeredRef.current) setFlipped(false);
+  };
+  const handlePointerEnter = (e: React.PointerEvent) => {
+    if (e.pointerType === "mouse" && hasBack) setFlipped(true);
+  };
+  const handlePointerLeave = (e: React.PointerEvent) => {
+    if (e.pointerType === "mouse") setFlipped(false);
+    endHold();
+  };
+  const handlePointerDown = (e: React.PointerEvent) => {
+    if (e.pointerType !== "touch" || !hasBack) return;
+    holdTimerRef.current = window.setTimeout(() => {
+      holdTriggeredRef.current = true;
+      setFlipped(true);
+    }, 350);
+  };
+  const handleClick = () => {
+    if (holdTriggeredRef.current) {
+      holdTriggeredRef.current = false;
+      return;
+    }
+    onViewInfo(item);
+  };
+
   const addToBag = () => {
     if (isUnavailable || inBag) return;
     addItem({ type: "unit", id: item.id, name: item.name, price: item.price, image: item.image });
@@ -54,21 +97,42 @@ function CameraCard({ item, onViewInfo }: { item: CatalogItem; onViewInfo: (item
     <article className="group relative flex h-full flex-col overflow-hidden rounded-[1.75rem] border border-ink-900/8 bg-cream-50 shadow-[0_2px_20px_-8px_rgba(27,23,18,0.12)] transition-all duration-500 hover:-translate-y-2 hover:shadow-[0_30px_60px_-24px_rgba(27,23,18,0.3)]">
       <button
         type="button"
-        onClick={() => onViewInfo(item)}
+        onClick={handleClick}
+        onPointerEnter={handlePointerEnter}
+        onPointerLeave={handlePointerLeave}
+        onPointerDown={handlePointerDown}
+        onPointerUp={endHold}
+        onPointerCancel={endHold}
         aria-label={`View details for ${item.name}`}
         className="block w-full text-left"
       >
         {/* Image */}
         <div className={`relative overflow-hidden bg-gradient-to-br ${item.tint ?? "from-cream-200"} to-cream-100`}>
           {item.image ? (
-            <img
-              src={item.image}
-              alt={`${item.name} — vintage digital camera`}
-              loading="lazy"
-              width={720}
-              height={900}
-              className="aspect-[4/4.6] w-full object-cover transition-transform duration-700 ease-out group-hover:scale-[1.06] group-hover:rotate-1"
-            />
+            <>
+              <img
+                src={item.image}
+                alt={`${item.name} — vintage digital camera`}
+                loading="lazy"
+                width={720}
+                height={900}
+                className={`aspect-[4/4.6] w-full object-cover transition-all duration-500 ease-out group-hover:scale-[1.06] group-hover:rotate-1 ${
+                  flipped ? "opacity-0" : "opacity-100"
+                }`}
+              />
+              {hasBack && (
+                <img
+                  src={item.imageBack}
+                  alt={`${item.name} — back of camera`}
+                  loading="lazy"
+                  width={720}
+                  height={900}
+                  className={`absolute inset-0 aspect-[4/4.6] w-full object-cover transition-all duration-500 ease-out group-hover:scale-[1.06] group-hover:rotate-1 ${
+                    flipped ? "opacity-100" : "opacity-0"
+                  }`}
+                />
+              )}
+            </>
           ) : (
             <div className="flex aspect-[4/4.6] w-full flex-col items-center justify-center gap-2 text-ink-300">
               <ImageOff className="h-8 w-8" strokeWidth={1.5} />
