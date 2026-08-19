@@ -14,6 +14,7 @@ import { formatPeso } from "../lib/format";
 import { getNativeLanguage } from "../lib/languages";
 import phAddresses from "../lib/ph-addresses.json";
 import LalamovePinPicker from "./LalamovePinPicker";
+import PaymentQrLightbox from "./PaymentQrLightbox";
 import { EASE } from "./Reveal";
 
 type PhAddress = { province: string; city: string; zip: string };
@@ -132,6 +133,7 @@ export default function Checkout({ open, onClose }: { open: boolean; onClose: ()
   const [fulfillmentMethod, setFulfillmentMethod] = useState<"online" | "cod">("online");
   const [shippingMethod, setShippingMethod] = useState<ShippingMethod>("lbc");
   const [qrCodes, setQrCodes] = useState<PaymentQrCode[]>([]);
+  const [expandedQr, setExpandedQr] = useState<PaymentQrCode | null>(null);
   const [proofFile, setProofFile] = useState<File | null>(null);
   const [dropoffPin, setDropoffPin] = useState<{ lat: number; lng: number } | null>(null);
   const [lalamoveFeePhp, setLalamoveFeePhp] = useState<number | null>(null);
@@ -309,10 +311,12 @@ export default function Checkout({ open, onClose }: { open: boolean; onClose: ()
     setError(null);
     setPaymentPlan(null);
     setProofFile(null);
+    setExpandedQr(null);
     onClose();
   };
 
   return (
+    <>
     <AnimatePresence>
       {open && (
         <>
@@ -538,14 +542,19 @@ export default function Checkout({ open, onClose }: { open: boolean; onClose: ()
                         {qrCodes.length > 0 ? (
                           <div className="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-3">
                             {qrCodes.map((qr) => (
-                              <div key={qr.imageUrl} className="flex flex-col items-center gap-1.5">
+                              <button
+                                key={qr.imageUrl}
+                                type="button"
+                                onClick={() => setExpandedQr(qr)}
+                                className="flex flex-col items-center gap-1.5"
+                              >
                                 <img
                                   src={qr.imageUrl}
-                                  alt={`${qr.label} QR code`}
-                                  className="aspect-square w-full rounded-xl border border-ink-900/8 bg-cream-50 object-contain p-1.5"
+                                  alt={`${qr.label} QR code — tap to enlarge`}
+                                  className="aspect-square w-full rounded-xl border border-ink-900/8 bg-cream-50 object-contain p-1.5 transition-transform duration-200 active:scale-95"
                                 />
                                 <span className="text-xs font-semibold text-ink-700">{qr.label}</span>
-                              </div>
+                              </button>
                             ))}
                           </div>
                         ) : (
@@ -696,6 +705,8 @@ export default function Checkout({ open, onClose }: { open: boolean; onClose: ()
         </>
       )}
     </AnimatePresence>
+    <PaymentQrLightbox qr={expandedQr} onClose={() => setExpandedQr(null)} />
+    </>
   );
 }
 

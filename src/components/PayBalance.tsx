@@ -10,6 +10,7 @@ import {
   type PayBalanceStatus,
 } from "../lib/api";
 import { formatPeso } from "../lib/format";
+import PaymentQrLightbox from "./PaymentQrLightbox";
 import { EASE } from "./Reveal";
 
 type ViewState =
@@ -31,6 +32,7 @@ const formatDate = (iso: string) =>
 export default function PayBalance() {
   const [state, setState] = useState<ViewState>({ kind: "hidden" });
   const [qrCodes, setQrCodes] = useState<PaymentQrCode[]>([]);
+  const [expandedQr, setExpandedQr] = useState<PaymentQrCode | null>(null);
   const [proofFile, setProofFile] = useState<File | null>(null);
   const [fileError, setFileError] = useState<string | null>(null);
 
@@ -68,6 +70,7 @@ export default function PayBalance() {
     setState({ kind: "hidden" });
     setProofFile(null);
     setFileError(null);
+    setExpandedQr(null);
   };
 
   const submitProof = async (orderId: string) => {
@@ -89,6 +92,7 @@ export default function PayBalance() {
   const visible = state.kind !== "hidden";
 
   return (
+    <>
     <AnimatePresence>
       {visible && (
         <>
@@ -157,14 +161,19 @@ export default function PayBalance() {
                   {qrCodes.length > 0 ? (
                     <div className="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-3">
                       {qrCodes.map((qr) => (
-                        <div key={qr.imageUrl} className="flex flex-col items-center gap-1.5">
+                        <button
+                          key={qr.imageUrl}
+                          type="button"
+                          onClick={() => setExpandedQr(qr)}
+                          className="flex flex-col items-center gap-1.5"
+                        >
                           <img
                             src={qr.imageUrl}
-                            alt={`${qr.label} QR code`}
-                            className="aspect-square w-full rounded-xl border border-ink-900/8 bg-cream-50 object-contain p-1.5"
+                            alt={`${qr.label} QR code — tap to enlarge`}
+                            className="aspect-square w-full rounded-xl border border-ink-900/8 bg-cream-50 object-contain p-1.5 transition-transform duration-200 active:scale-95"
                           />
                           <span className="text-xs font-semibold text-ink-700">{qr.label}</span>
-                        </div>
+                        </button>
                       ))}
                     </div>
                   ) : (
@@ -269,5 +278,7 @@ export default function PayBalance() {
         </>
       )}
     </AnimatePresence>
+    <PaymentQrLightbox qr={expandedQr} onClose={() => setExpandedQr(null)} />
+    </>
   );
 }
