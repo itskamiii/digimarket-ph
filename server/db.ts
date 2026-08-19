@@ -299,8 +299,8 @@ export async function addSubscriber(email: string, nativeLanguage: string | null
 }
 
 // Always succeeds whether or not the email was actually on the list — the caller
-// (api/unsubscribe.ts) treats both cases as "you're unsubscribed" so this can't be used
-// to probe which emails are subscribed.
+// (api/subscribe.ts's unsubscribe action) treats both cases as "you're unsubscribed" so
+// this can't be used to probe which emails are subscribed.
 export async function removeSubscriber(email: string): Promise<void> {
   const { error } = await getSupabase().from("subscribers").delete().eq("email", email);
   if (error) throw error;

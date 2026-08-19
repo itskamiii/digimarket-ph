@@ -38,9 +38,11 @@ const PAID_MESSAGE: Record<ShippingMethod, string> = {
 const POLL_INTERVAL_MS = 2000;
 const MAX_POLLS = 10;
 
-// Reads `?order=&status=` left by a PayMongo redirect (see api/checkout.ts's
-// success_url / api/checkout/cancel.ts) and shows the matching outcome. No router
-// needed — this is the one redirect-return case on an otherwise anchor-nav SPA.
+// Reads `?order=&status=` left by a PayMongo redirect — dormant now that checkout no
+// longer creates PayMongo sessions (see api/checkout.ts), kept only in case an
+// already-in-flight old session still redirects here via api/checkout/verify.ts's
+// ?action=cancel branch. No router needed — this was the one redirect-return case on an
+// otherwise anchor-nav SPA.
 export default function OrderStatus() {
   const { clear } = useCart();
   const [state, setState] = useState<ViewState>({ kind: "hidden" });

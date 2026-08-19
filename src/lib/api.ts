@@ -116,7 +116,8 @@ export type PayBalanceStatus = {
 };
 
 export async function fetchPayBalanceStatus(orderId: string): Promise<PayBalanceStatus> {
-  const res = await fetch(`/api/pay-balance-status?orderId=${encodeURIComponent(orderId)}`);
+  // Shares an endpoint with fetchOrderStatus() — see api/order-status.ts for why.
+  const res = await fetch(`/api/order-status?orderId=${encodeURIComponent(orderId)}&view=balance`);
   const json = (await res.json().catch(() => ({}))) as { error?: string } & Partial<PayBalanceStatus>;
   if (!res.ok || json.balancePhp === undefined) {
     throw new Error(json.error ?? "Couldn't load this order — please try again.");
@@ -141,10 +142,11 @@ export async function subscribe(email: string, nativeLanguage?: string): Promise
 }
 
 export async function unsubscribe(email: string): Promise<void> {
-  const res = await fetch("/api/unsubscribe", {
+  // Shares an endpoint with subscribe() — see api/subscribe.ts for why.
+  const res = await fetch("/api/subscribe", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ email }),
+    body: JSON.stringify({ email, action: "unsubscribe" }),
   });
   const json = (await res.json().catch(() => ({}))) as { error?: string };
   if (!res.ok) throw new Error(json.error ?? "Couldn't unsubscribe — please try again.");

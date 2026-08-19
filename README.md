@@ -27,17 +27,22 @@ Instagram: [@digimarket_ph](https://instagram.com/digimarket_ph)
 ## Project structure
 
 ```
-api/                          Vercel serverless functions
+api/                          Vercel serverless functions — capped at 11 of Vercel's Hobby-plan
+                               12-per-deployment limit, so a few double up on responsibilities
+                               (query params / a body field pick the branch) rather than each
+                               getting its own file
   checkout.ts                   Main checkout endpoint
-  checkout/                     Sub-endpoints — cancel, Lalamove fee preview, upload proof of
-                                 payment, submit/verify a layaway balance payment
+  checkout/                     Sub-endpoints — Lalamove fee preview, upload proof of payment,
+                                 submit a layaway balance payment, verify a payment/balance/
+                                 cancel (?action=, ?balance=1 — see verify.ts)
   payment-qr.ts                 Lists whatever QR codes are in storage (unit-photos/payment-qr/)
   webhooks/paymongo.ts          PayMongo payment webhook — dormant, kept as a fallback
   cron/                         Scheduled jobs — layaway balance reminders
-  order-status.ts               Order lookup (unauthenticated, minimal data)
-  pay-balance-status.ts         Layaway balance lookup (unauthenticated, minimal data)
+  order-status.ts               Order + layaway balance lookup (?view=balance) — unauthenticated,
+                                 minimal data
   products.ts                   Catalog feed
-  subscribe.ts, unsubscribe.ts  Collection-drop email list
+  subscribe.ts                  Collection-drop email list — subscribe and unsubscribe
+                                 (action: "unsubscribe" in the body)
 
 server/                       Shared server-side logic imported by api/ functions
   db.ts, supabase.ts, paymentProofs.ts, paymongo.ts (dormant), lalamove.ts, notify.ts,
