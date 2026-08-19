@@ -33,12 +33,32 @@ function payBalanceLink(orderId: string): string {
   return `${siteUrl}/?payBalance=${orderId}`;
 }
 
-// Layaway's balance is never collected automatically (PayMongo Checkout Sessions can't
-// do a recurring/scheduled charge) — this always needs a human to send the customer
-// their pay-balance link and follow up before the deadline, on top of whatever the
-// courier itself needs.
+function verifyLink(orderId: string): string {
+  const siteUrl = process.env.SITE_URL ?? "";
+  return `${siteUrl}/api/checkout/verify?order=${orderId}`;
+}
+
+function verifyBalanceLink(orderId: string): string {
+  const siteUrl = process.env.SITE_URL ?? "";
+  return `${siteUrl}/api/checkout/verify?order=${orderId}&balance=1`;
+}
+
+// PayMongo used to confirm online payment automatically via webhook — now the customer
+// attaches a screenshot/receipt at checkout and the owner has to actually look at it
+// before the sale is real. One-click link flips the order to "paid" (and, for a
+// non-layaway order, marks the unit sold) once they've checked it against their own
+// GCash/Maya/bank app.
+function proofVerificationActionNeeded(orderId: string, signedUrl: string | null): string {
+  const viewProof = signedUrl ? `View proof: ${signedUrl}. ` : "Proof image failed to load a signed URL — check the order's proof_of_payment_url column directly in Supabase. ";
+  return `Payment claimed but NOT yet verified — check it against your GCash/Maya/bank app before treating this as sold. ${viewProof}Once confirmed: ${verifyLink(orderId)}`;
+}
+
+// Layaway's balance is never collected automatically — this always needs a human to send
+// the customer their pay-balance link and follow up before the deadline, on top of
+// whatever the courier itself needs (and on top of verifying the down payment proof —
+// see proofVerificationActionNeeded, always shown alongside this for a layaway order).
 function layawayActionNeeded(orderId: string, balancePhp: number, dueAt: string): string {
-  return `Layaway — down payment + reservation fee received. Balance of ${peso(balancePhp)} is due by ${formatDate(dueAt)}: send the customer their pay-balance link (${payBalanceLink(orderId)}) and follow up before the deadline.`;
+  return `Layaway — once the down payment is verified, balance of ${peso(balancePhp)} is due by ${formatDate(dueAt)}: send the customer their pay-balance link (${payBalanceLink(orderId)}) and follow up before the deadline.`;
 }
 
 // Reuses the same Formspree form as the waitlist signup — it's already wired to the
@@ -77,6 +97,11 @@ export async function notifyNewOrder(params: {
   layawayBalancePhp?: number | null;
   layawayBalanceDueAt?: string | null;
   nativeLanguage?: string | null;
+  // Signed URL to the customer's uploaded proof of payment — only set (and only
+  // meaningful) when fulfillmentMethod is "online". Null means either this is a COD
+  // order (no proof involved) or signing the URL itself failed (see the fallback text
+  // in proofVerificationActionNeeded).
+  proofOfPaymentSignedUrl?: string | null;
 }): Promise<void> {
   const addr = params.shippingAddress;
   const shippingLine = [addr.line1, addr.line2, addr.city, addr.province, addr.postalCode]
@@ -85,6 +110,9 @@ export async function notifyNewOrder(params: {
   const itemsLine = params.items.map((i) => `${i.quantity}x ${i.name} (${peso(i.price)})`).join("; ");
   const isLayaway = params.paymentPlan === "layaway" && params.layawayBalancePhp != null && params.layawayBalanceDueAt;
   const action = [
+    params.fulfillmentMethod === "online"
+      ? proofVerificationActionNeeded(params.orderId, params.proofOfPaymentSignedUrl ?? null)
+      : null,
     isLayaway ? layawayActionNeeded(params.orderId, params.layawayBalancePhp!, params.layawayBalanceDueAt!) : null,
     courierActionNeeded(params.shippingMethod, params.fulfillmentMethod),
   ]
@@ -95,8 +123,8 @@ export async function notifyNewOrder(params: {
   await sendToFormspree(
     {
       _subject: isLayaway
-        ? `New layaway order (${params.shippingMethod}) — ${peso(collectedNow)} today, ${peso(params.layawayBalancePhp!)} balance`
-        : `New ${params.fulfillmentMethod === "cod" ? "manual-pay" : "paid online"} order (${params.shippingMethod}) — ${peso(params.totalPhp)}`,
+        ? `New layaway order (${params.shippingMethod}) — ${peso(collectedNow)} today, ${peso(params.layawayBalancePhp!)} balance — NOT YET VERIFIED`
+        : `New ${params.fulfillmentMethod === "cod" ? "manual-pay" : "paid via QR"} order (${params.shippingMethod}) — ${peso(params.totalPhp)}${params.fulfillmentMethod === "online" ? " — NOT YET VERIFIED" : ""}`,
       _replyto: params.customerEmail,
       orderId: params.orderId,
       customerName: params.customerName,
@@ -114,6 +142,28 @@ export async function notifyNewOrder(params: {
       ...(action ? { actionNeeded: action } : {}),
     },
     "new-order notification"
+  );
+}
+
+// The customer submitted proof for their layaway balance — same "needs a human to check
+// it" gap as the down payment, via PayBalance.tsx instead of Checkout.tsx.
+export async function notifyLayawayBalanceSubmitted(params: {
+  orderId: string;
+  customerName: string;
+  balancePhp: number;
+  signedUrl: string | null;
+}): Promise<void> {
+  const viewProof = params.signedUrl
+    ? `View proof: ${params.signedUrl}. `
+    : "Proof image failed to load a signed URL — check the order's layaway_balance_proof_url column directly in Supabase. ";
+  await sendToFormspree(
+    {
+      _subject: `Layaway balance payment claimed (${peso(params.balancePhp)}) — NOT YET VERIFIED`,
+      orderId: params.orderId,
+      customerName: params.customerName,
+      actionNeeded: `Balance payment claimed but NOT yet verified — check it against your GCash/Maya/bank app. ${viewProof}Once confirmed: ${verifyBalanceLink(params.orderId)}`,
+    },
+    "layaway-balance-submitted notification"
   );
 }
 

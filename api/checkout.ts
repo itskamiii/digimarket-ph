@@ -1,5 +1,4 @@
 import {
-  attachPaymongoSession,
   deleteOrder,
   getKitsByIds,
   getUnitsByIds,
@@ -10,7 +9,7 @@ import {
   type NewOrderItemInput,
 } from "../server/db.js";
 import { notifyNewOrder } from "../server/notify.js";
-import { createCheckoutSession, type CheckoutLineItem } from "../server/paymongo.js";
+import { getPaymentProofSignedUrl } from "../server/paymentProofs.js";
 import { allowCheckoutAttempt, getClientIp } from "../server/rateLimit.js";
 import type { CheckoutItemInput, CheckoutRequestBody, PaymentPlan, ShippingAddress } from "../server/types.js";
 
@@ -113,10 +112,15 @@ export async function POST(request: Request) {
     return Response.json({ error: "invalid_payment_plan" }, { status: 400 });
   }
   if (paymentPlan === "layaway" && body.fulfillmentMethod !== "online") {
-    // The down payment is always charged now, through PayMongo — this takes precedence
-    // over any courier's own payment-path rules (e.g. Meet up/Pick up normally force
-    // "cod", but a layaway down payment on those still goes through PayMongo first).
+    // The down payment is always paid now, via QR + proof of payment — this takes
+    // precedence over any courier's own payment-path rules (e.g. Meet up/Pick up
+    // normally force "cod", but a layaway down payment on those still needs proof first).
     return Response.json({ error: "layaway_requires_online_payment" }, { status: 400 });
+  }
+  if (body.fulfillmentMethod === "online" && !body.proofOfPaymentUrl?.trim()) {
+    // "online" now means "paid via QR, proof attached" rather than a PayMongo redirect —
+    // the client must have already called POST /api/checkout/upload-proof first.
+    return Response.json({ error: "missing_proof_of_payment" }, { status: 400 });
   }
 
   const nativeLanguage = cleanNativeLanguage(body.nativeLanguage);
@@ -146,8 +150,8 @@ export async function POST(request: Request) {
     body.fulfillmentMethod !== "cod"
   ) {
     // No courier involved at all — always settled in person as cash or fund transfer,
-    // never prepaid through PayMongo. Layaway is the one exception: its down payment
-    // still goes through PayMongo even for an otherwise in-person exchange.
+    // never prepaid via QR. Layaway is the one exception: its down payment still needs
+    // proof of payment even for an otherwise in-person exchange.
     return Response.json({ error: "in_person_requires_manual_payment" }, { status: 400 });
   }
 
@@ -213,7 +217,7 @@ export async function POST(request: Request) {
     // Full-payment total is just subtotal + shipping; layaway's is the fee-inclusive
     // New Total + shipping (total_php always reflects the FULL order value either way).
     totalPhp: (layawaySplit ? layawaySplit.newTotalPhp : subtotalPhp) + shippingFeePhp,
-    status: body.fulfillmentMethod === "cod" ? "cod_pending" : "pending_payment",
+    status: body.fulfillmentMethod === "cod" ? "cod_pending" : "pending_verification",
     shippingMethod,
     shippingFeePhp,
     dropoffLat: shippingMethod === "lalamove" ? body.dropoffPin!.lat : null,
@@ -222,88 +226,48 @@ export async function POST(request: Request) {
     layawayBalancePhp: layawaySplit?.balancePhp,
     layawayBalanceDueAt,
     nativeLanguage,
+    proofOfPaymentUrl: body.fulfillmentMethod === "online" ? body.proofOfPaymentUrl!.trim() : null,
   });
 
   try {
     await insertOrderItems(order.id, orderItems);
 
     // Physical units are one-of-a-kind and must be claimed atomically; kits aren't
-    // inventory-constrained (the owner picks a physical camera to fulfil it later). A
-    // layaway order is a real reservation too — held indefinitely just like COD, not on
-    // the short checkout-abandonment TTL.
+    // inventory-constrained (the owner picks a physical camera to fulfil it later). Every
+    // order is a committed sale at creation time now — online payment used to be a
+    // short-TTL hold pending a PayMongo redirect, but "online" now means "proof of
+    // payment already attached," so it holds the unit indefinitely just like COD/layaway.
     const unitIds = unitItems.map((i) => i.id);
     if (unitIds.length > 0) {
-      const { missingIds } = await reserveUnits(unitIds, order.id, {
-        indefinite: body.fulfillmentMethod === "cod" || paymentPlan === "layaway",
-      });
+      const { missingIds } = await reserveUnits(unitIds, order.id, { indefinite: true });
       if (missingIds.length > 0) {
         await rollbackOrder(order.id);
         return Response.json({ error: "unavailable", unavailableItems: missingIds }, { status: 409 });
       }
     }
 
-    if (body.fulfillmentMethod === "cod") {
-      // COD is a committed sale at creation time (no payment webhook to hang the
-      // notification off of), so notify right here.
-      await notifyNewOrder({
-        orderId: order.id,
-        customerName: customer.name.trim(),
-        customerEmail: customer.email.trim(),
-        customerPhone: customer.phone.trim(),
-        shippingAddress: body.shipping,
-        fulfillmentMethod: "cod",
-        shippingMethod,
-        // Layaway always requires fulfillmentMethod "online" (validated above), so this
-        // cod branch can never be a layaway order.
-        paymentPlan: "full",
-        items: orderItems.map((i) => ({ name: i.name, price: i.price, quantity: i.quantity })),
-        totalPhp: order.total_php,
-        nativeLanguage,
-      });
-      return Response.json({ orderId: order.id, redirect: null });
-    }
+    // Nothing here waits on a payment-gateway webhook anymore — every path is a
+    // committed sale the instant it's submitted, so every path notifies right here.
+    const proofSignedUrl =
+      body.fulfillmentMethod === "online" ? await getPaymentProofSignedUrl(body.proofOfPaymentUrl!.trim()) : null;
 
-    const siteUrl = process.env.SITE_URL;
-    if (!siteUrl) throw new Error("SITE_URL is not set");
-
-    // No shipping/delivery fee is ever charged online — every courier's fee is either
-    // collected on delivery or settled via DM (see shippingFeePhp above), except Meet
-    // up's flat fee, which layaway folds into today's charge below.
-    const lineItems: CheckoutLineItem[] = layawaySplit
-      ? [
-          // The 5% fee is already folded into the New Total that this 30% is computed
-          // from, not charged as a separate amount — see computeLayawaySplit above.
-          {
-            name: "Down payment (30%, incl. 5% reservation fee)",
-            amount: layawaySplit.downPaymentCentavos,
-            currency: "PHP",
-            quantity: 1,
-          },
-          ...(shippingFeePhp > 0
-            ? [{ name: "Meet-up fee", amount: shippingFeePhp * 100, currency: "PHP" as const, quantity: 1 }]
-            : []),
-        ]
-      : orderItems.map((item) => ({
-          name: item.name,
-          amount: item.price * 100,
-          currency: "PHP" as const,
-          quantity: item.quantity,
-        }));
-
-    const session = await createCheckoutSession({
-      lineItems,
-      successUrl: `${siteUrl}/?order=${order.id}&status=success`,
-      // Routed through a cleanup endpoint (not straight back to the site) so an explicit
-      // cancel immediately frees the reserved units instead of waiting out the TTL —
-      // otherwise an instant retry would collide with the customer's own abandoned order.
-      cancelUrl: `${siteUrl}/api/checkout/cancel?order=${order.id}`,
-      description: `Digimarket_PH order ${order.id}`,
-      billing: { name: customer.name.trim(), email: customer.email.trim(), phone: customer.phone.trim() },
-      metadata: { order_id: order.id },
+    await notifyNewOrder({
+      orderId: order.id,
+      customerName: customer.name.trim(),
+      customerEmail: customer.email.trim(),
+      customerPhone: customer.phone.trim(),
+      shippingAddress: body.shipping,
+      fulfillmentMethod: body.fulfillmentMethod,
+      shippingMethod,
+      paymentPlan,
+      layawayBalancePhp: layawaySplit?.balancePhp,
+      layawayBalanceDueAt,
+      items: orderItems.map((i) => ({ name: i.name, price: i.price, quantity: i.quantity })),
+      totalPhp: order.total_php,
+      nativeLanguage,
+      proofOfPaymentSignedUrl: proofSignedUrl,
     });
-    await attachPaymongoSession(order.id, session.id, null);
-
-    return Response.json({ orderId: order.id, redirect: session.checkoutUrl });
+    return Response.json({ orderId: order.id, redirect: null });
   } catch (err) {
     console.error("POST /api/checkout failed after order creation", err);
     await rollbackOrder(order.id);

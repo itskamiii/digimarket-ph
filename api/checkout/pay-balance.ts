@@ -1,28 +1,33 @@
-import { getOrderById } from "../../server/db.js";
-import { createCheckoutSession } from "../../server/paymongo.js";
+import { getOrderById, submitLayawayBalanceProof } from "../../server/db.js";
+import { notifyLayawayBalanceSubmitted } from "../../server/notify.js";
+import { getPaymentProofSignedUrl } from "../../server/paymentProofs.js";
 import { allowCheckoutAttempt, getClientIp } from "../../server/rateLimit.js";
 
-// Creates a real PayMongo charge for exactly a layaway order's outstanding balance —
-// a second, separate checkout session from the original down-payment one. The webhook
-// (api/webhooks/paymongo.ts) tells this apart from a normal order/down-payment via
-// metadata.purpose === "layaway_balance", since the order's own status stays "paid"
-// throughout (that already means "the down payment cleared").
+// Records a layaway balance payment claim — the customer has already uploaded proof via
+// POST /api/checkout/upload-proof and includes the resulting path here. Doesn't clear the
+// balance itself (that only happens once the owner verifies it via the link in their
+// notification email, see api/checkout/verify.ts) — this just files the claim and alerts
+// the owner, same "committed but unverified" pattern as a fresh online order.
 export async function POST(request: Request) {
   const clientIp = getClientIp(request);
   if (!(await allowCheckoutAttempt(clientIp))) {
     return Response.json({ error: "rate_limited" }, { status: 429 });
   }
 
-  let body: { orderId?: string };
+  let body: { orderId?: string; proofOfPaymentUrl?: string };
   try {
-    body = (await request.json()) as { orderId?: string };
+    body = (await request.json()) as { orderId?: string; proofOfPaymentUrl?: string };
   } catch {
     return Response.json({ error: "invalid_json" }, { status: 400 });
   }
 
   const orderId = body.orderId;
+  const proofOfPaymentUrl = body.proofOfPaymentUrl?.trim();
   if (!orderId) {
     return Response.json({ error: "missing_order_id" }, { status: 400 });
+  }
+  if (!proofOfPaymentUrl) {
+    return Response.json({ error: "missing_proof_of_payment" }, { status: 400 });
   }
 
   try {
@@ -31,34 +36,30 @@ export async function POST(request: Request) {
       return Response.json({ error: "not_found" }, { status: 404 });
     }
     if (order.payment_plan !== "layaway" || order.status !== "paid") {
-      // Not a layaway order, or its own down payment never cleared — there's nothing
-      // valid to charge a balance against yet.
+      // Not a layaway order, or its own down payment hasn't been verified yet — there's
+      // nothing valid to claim a balance payment against.
       return Response.json({ error: "no_balance_due" }, { status: 400 });
     }
     if (!order.layaway_balance_php || order.layaway_balance_php <= 0) {
       return Response.json({ error: "already_paid" }, { status: 400 });
     }
 
-    const siteUrl = process.env.SITE_URL;
-    if (!siteUrl) throw new Error("SITE_URL is not set");
+    const recorded = await submitLayawayBalanceProof(orderId, proofOfPaymentUrl);
+    if (!recorded) {
+      // Same eligibility check as above, re-run atomically inside the UPDATE — covers a
+      // race where the balance cleared between the read above and this write.
+      return Response.json({ error: "already_paid" }, { status: 400 });
+    }
 
-    const session = await createCheckoutSession({
-      lineItems: [
-        {
-          name: "Layaway balance",
-          amount: order.layaway_balance_php * 100,
-          currency: "PHP",
-          quantity: 1,
-        },
-      ],
-      successUrl: `${siteUrl}/?payBalance=${order.id}&paid=1`,
-      cancelUrl: `${siteUrl}/?payBalance=${order.id}`,
-      description: `Digimarket_PH layaway balance — order ${order.id}`,
-      billing: { name: order.customer_name, email: order.customer_email, phone: order.customer_phone },
-      metadata: { order_id: order.id, purpose: "layaway_balance" },
+    const signedUrl = await getPaymentProofSignedUrl(proofOfPaymentUrl);
+    await notifyLayawayBalanceSubmitted({
+      orderId,
+      customerName: order.customer_name,
+      balancePhp: order.layaway_balance_php,
+      signedUrl,
     });
 
-    return Response.json({ redirect: session.checkoutUrl });
+    return Response.json({ ok: true });
   } catch (err) {
     console.error("POST /api/checkout/pay-balance failed", err);
     return Response.json({ error: "internal_error" }, { status: 500 });

@@ -29,7 +29,8 @@ export type KitRow = {
 };
 
 export type OrderStatusValue =
-  | "pending_payment"
+  | "pending_payment" // legacy PayMongo status — no longer produced by new orders
+  | "pending_verification" // customer uploaded proof of payment, owner hasn't confirmed it yet
   | "paid"
   | "cod_pending"
   | "fulfilled"
@@ -57,9 +58,10 @@ export type ShippingMethod = "lbc" | "lalamove" | "dhl" | "meetup" | "pickup";
 
 export type LatLng = { lat: number; lng: number };
 
-// "layaway" always requires fulfillmentMethod "online" — the 30% down payment + 5%
-// reservation fee is charged now, the remaining 65% is owed within 30 days and always
-// collected manually (no recurring-charge mechanism in PayMongo Checkout Sessions).
+// "layaway" always requires fulfillmentMethod "online" — the down payment (30% of a
+// 5%-fee-inclusive total, see api/checkout.ts's computeLayawaySplit) is paid now via QR +
+// proof of payment, the remaining balance is owed within 30 days and collected the same
+// way through a second proof submission (api/checkout/pay-balance.ts).
 export type PaymentPlan = "full" | "layaway";
 
 export type CheckoutRequestBody = {
@@ -74,6 +76,10 @@ export type CheckoutRequestBody = {
   // src/lib/languages.ts) — informational only, so the owner knows what language to reply
   // in. Absent when they skipped the prompt or cleared their browser storage.
   nativeLanguage?: string;
+  // Storage path returned by POST /api/checkout/upload-proof — required whenever
+  // fulfillmentMethod is "online", since payment is now a manual QR + proof flow instead
+  // of a PayMongo redirect (see server/paymentProofs.ts).
+  proofOfPaymentUrl?: string;
 };
 
 export type OrderRow = {
@@ -100,6 +106,8 @@ export type OrderRow = {
   layaway_balance_php: number | null;
   layaway_balance_due_at: string | null;
   native_language: string | null;
+  proof_of_payment_url: string | null;
+  layaway_balance_proof_url: string | null;
   notes: string | null;
 };
 

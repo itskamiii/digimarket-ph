@@ -1,8 +1,15 @@
 import { AnimatePresence, motion } from "framer-motion";
-import { AlertCircle, Loader2, ShoppingBag, X } from "lucide-react";
+import { AlertCircle, Loader2, ShoppingBag, Upload, X } from "lucide-react";
 import { useEffect, useMemo, useState, type FormEvent } from "react";
 import { useCart } from "../context/CartContext";
-import { CheckoutUnavailableError, createCheckout, fetchLalamoveQuote } from "../lib/api";
+import {
+  CheckoutUnavailableError,
+  createCheckout,
+  fetchLalamoveQuote,
+  fetchPaymentQrCodes,
+  uploadPaymentProof,
+  type PaymentQrCode,
+} from "../lib/api";
 import { formatPeso } from "../lib/format";
 import { getNativeLanguage } from "../lib/languages";
 import phAddresses from "../lib/ph-addresses.json";
@@ -24,6 +31,7 @@ const ERROR_MESSAGES: Record<string, string> = {
   in_person_requires_manual_payment: "Meet up and Pick up are always settled in person — please try again.",
   invalid_payment_plan: "Please choose Full or Layaway.",
   layaway_requires_online_payment: "Layaway's down payment is always paid online — please try again.",
+  missing_proof_of_payment: "Please upload your proof of payment.",
   empty_cart: "Your bag is empty.",
   rate_limited: "Too many checkout attempts — please wait a few minutes and try again.",
 };
@@ -88,7 +96,7 @@ function computeLayawaySplit(subtotalPhp: number) {
   };
 }
 
-const CONFIRMATION_TEXT: Record<ShippingMethod, string> = {
+const COD_CONFIRMATION_TEXT: Record<ShippingMethod, string> = {
   lbc: "We've reserved your unit(s). Pay the courier on delivery. We'll DM/email you shipping details shortly.",
   lalamove:
     "We've reserved your unit(s). We'll settle everything via DM on Instagram — confirming your fund transfer, booking your Lalamove rider, and sending you the delivery details.",
@@ -98,6 +106,17 @@ const CONFIRMATION_TEXT: Record<ShippingMethod, string> = {
   pickup:
     "We've reserved your unit(s). We'll DM you on Instagram to arrange a pickup time — cash or fund transfer on the day, no extra fee.",
 };
+
+// Online payment no longer redirects anywhere to confirm — the proof of payment is
+// already attached, so every courier gets the same "we're checking it" message here,
+// same shape as COD's per-courier text but without repeating the courier-specific
+// fulfillment details (those still go out over DM once the payment's actually verified).
+function confirmationText(shippingMethod: ShippingMethod, fulfillmentMethod: "online" | "cod"): string {
+  if (fulfillmentMethod === "online") {
+    return "We've reserved your unit(s) and received your proof of payment. We're verifying it now and will confirm shortly — we'll DM or email you once it's set.";
+  }
+  return COD_CONFIRMATION_TEXT[shippingMethod];
+}
 
 export default function Checkout({ open, onClose }: { open: boolean; onClose: () => void }) {
   const { items, subtotal, pruneItems, clear } = useCart();
@@ -112,6 +131,8 @@ export default function Checkout({ open, onClose }: { open: boolean; onClose: ()
   const [postalCode, setPostalCode] = useState("");
   const [fulfillmentMethod, setFulfillmentMethod] = useState<"online" | "cod">("online");
   const [shippingMethod, setShippingMethod] = useState<ShippingMethod>("lbc");
+  const [qrCodes, setQrCodes] = useState<PaymentQrCode[]>([]);
+  const [proofFile, setProofFile] = useState<File | null>(null);
   const [dropoffPin, setDropoffPin] = useState<{ lat: number; lng: number } | null>(null);
   const [lalamoveFeePhp, setLalamoveFeePhp] = useState<number | null>(null);
   const [lalamoveQuoteLoading, setLalamoveQuoteLoading] = useState(false);
@@ -128,10 +149,10 @@ export default function Checkout({ open, onClose }: { open: boolean; onClose: ()
   const isMetroManila = province === "Metro Manila";
   const lalamoveIneligible = shippingMethod === "lalamove" && province !== "" && !isMetroManila;
 
-  // Layaway's down payment always goes through PayMongo, taking precedence over Meet
+  // Layaway's down payment always needs proof of payment now, taking precedence over Meet
   // up/Pick up's usual "force cod" rule (see the effect's normal case below) — the
-  // down payment is a separate, unrelated online charge from however the item
-  // eventually gets physically handed over.
+  // down payment is a separate, unrelated charge from however the item eventually gets
+  // physically handed over.
   useEffect(() => {
     if (paymentPlan === "layaway") {
       if (fulfillmentMethod !== "online") setFulfillmentMethod("online");
@@ -142,6 +163,21 @@ export default function Checkout({ open, onClose }: { open: boolean; onClose: ()
     }
   }, [shippingMethod, fulfillmentMethod, paymentPlan]);
 
+  // Fetched once when checkout opens rather than at module load — no point hitting the
+  // API for someone who never opens their bag. Self-adapting to whatever the owner has
+  // uploaded to the payment-qr/ storage folder (see api/payment-qr.ts) — an empty list
+  // just means the "how would you like to pay" section below shows a fallback instead.
+  useEffect(() => {
+    if (!open) return;
+    let cancelled = false;
+    fetchPaymentQrCodes().then((codes) => {
+      if (!cancelled) setQrCodes(codes);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [open]);
+
   // Flat meet-up fee, cheaper within Rizal (where the business is based, in Cainta) than
   // further out — no fee at all for pickup.
   const meetupFeePhp = shippingMethod === "meetup" ? (province === "Rizal" ? 250 : 300) : 0;
@@ -150,7 +186,7 @@ export default function Checkout({ open, onClose }: { open: boolean; onClose: ()
   // booked manually on the owner's phone regardless of payment path). Only Meet up
   // contributes a real, known-upfront fee.
   const shippingFeePhp = shippingMethod === "meetup" ? meetupFeePhp : 0;
-  // What actually gets charged through PayMongo right now — the full subtotal (+ any
+  // What the QR payment actually needs to cover right now — the full subtotal (+ any
   // upfront courier fee) for a full payment, or just the down payment + reservation fee
   // (+ upfront courier fee) for layaway. The layaway balance is never part of this.
   const dueTodayPhp = (paymentPlan === "layaway" ? layawaySplit.downPaymentPhp : subtotal) + shippingFeePhp;
@@ -209,7 +245,7 @@ export default function Checkout({ open, onClose }: { open: boolean; onClose: ()
 
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [codConfirmedOrderId, setCodConfirmedOrderId] = useState<string | null>(null);
+  const [confirmedOrderId, setConfirmedOrderId] = useState<string | null>(null);
 
   const onSubmit = async (e: FormEvent) => {
     e.preventDefault();
@@ -224,10 +260,20 @@ export default function Checkout({ open, onClose }: { open: boolean; onClose: ()
         return;
       }
     }
+    if (fulfillmentMethod === "online" && !proofFile) {
+      setError("Please upload your proof of payment.");
+      return;
+    }
     setSubmitting(true);
     setError(null);
 
     try {
+      // Two-step for online: the file goes up first (its own endpoint, since
+      // api/checkout.ts stays plain JSON), then the resulting storage path rides along
+      // in the normal checkout submission.
+      const proofOfPaymentUrl =
+        fulfillmentMethod === "online" ? (await uploadPaymentProof(proofFile!)).path : undefined;
+
       const result = await createCheckout({
         items: items.map((i) => ({ type: i.type, id: i.id, quantity: i.quantity })),
         customer: { name, email, phone },
@@ -239,15 +285,13 @@ export default function Checkout({ open, onClose }: { open: boolean; onClose: ()
         // Picked on their first visit (LanguagePrompt.tsx) — rides along so the owner
         // knows what language to reply in. null when they skipped the prompt.
         nativeLanguage: getNativeLanguage() ?? undefined,
+        proofOfPaymentUrl,
       });
 
-      if (result.redirect) {
-        window.location.href = result.redirect;
-        return; // leaving the page
-      }
-      // COD — no redirect, order is confirmed as cod_pending immediately.
+      // Every order is a committed sale the instant it's submitted now — no redirect,
+      // online or not (see api/checkout.ts).
       clear();
-      setCodConfirmedOrderId(result.orderId);
+      setConfirmedOrderId(result.orderId);
     } catch (err) {
       if (err instanceof CheckoutUnavailableError) {
         pruneItems(err.unavailableItems);
@@ -261,9 +305,10 @@ export default function Checkout({ open, onClose }: { open: boolean; onClose: ()
   };
 
   const handleClose = () => {
-    setCodConfirmedOrderId(null);
+    setConfirmedOrderId(null);
     setError(null);
     setPaymentPlan(null);
+    setProofFile(null);
     onClose();
   };
 
@@ -304,15 +349,15 @@ export default function Checkout({ open, onClose }: { open: boolean; onClose: ()
               </button>
             </div>
 
-            {codConfirmedOrderId ? (
+            {confirmedOrderId ? (
               <div className="flex flex-col items-center gap-3 px-6 py-14 text-center">
                 <span className="flex h-14 w-14 items-center justify-center rounded-full bg-lcd-500/15 text-lcd-500">
                   <ShoppingBag className="h-6 w-6" />
                 </span>
                 <p className="font-display text-xl font-bold text-ink-900">Order confirmed!</p>
-                <p className="max-w-xs text-sm text-ink-500">{CONFIRMATION_TEXT[shippingMethod]}</p>
+                <p className="max-w-xs text-sm text-ink-500">{confirmationText(shippingMethod, fulfillmentMethod)}</p>
                 <p className="font-mono text-[10px] font-bold uppercase tracking-[0.18em] text-ink-400">
-                  Order #{codConfirmedOrderId.slice(0, 8)}
+                  Order #{confirmedOrderId.slice(0, 8)}
                 </p>
                 <button
                   type="button"
@@ -485,6 +530,52 @@ export default function Checkout({ open, onClose }: { open: boolean; onClose: ()
                       </div>
                     )}
 
+                    {fulfillmentMethod === "online" && (
+                      <div className="rounded-2xl border border-ink-900/8 bg-cream-100/60 p-4">
+                        <p className="text-xs font-bold uppercase tracking-[0.14em] text-ink-400">
+                          Scan to pay {formatPeso(dueTodayPhp)}
+                        </p>
+                        {qrCodes.length > 0 ? (
+                          <div className="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-3">
+                            {qrCodes.map((qr) => (
+                              <div key={qr.imageUrl} className="flex flex-col items-center gap-1.5">
+                                <img
+                                  src={qr.imageUrl}
+                                  alt={`${qr.label} QR code`}
+                                  className="aspect-square w-full rounded-xl border border-ink-900/8 bg-cream-50 object-contain p-1.5"
+                                />
+                                <span className="text-xs font-semibold text-ink-700">{qr.label}</span>
+                              </div>
+                            ))}
+                          </div>
+                        ) : (
+                          <p className="mt-2 text-xs text-ink-500">
+                            Our QR codes aren't loaded yet — message us on Instagram to arrange payment before
+                            submitting this order.
+                          </p>
+                        )}
+
+                        <label htmlFor="proof-of-payment" className="mt-4 block text-xs font-medium text-ink-500">
+                          Proof of payment<RequiredMark />
+                        </label>
+                        <label
+                          htmlFor="proof-of-payment"
+                          className="mt-1.5 flex cursor-pointer items-center gap-2 rounded-xl border border-dashed border-ink-900/20 bg-cream-50 px-4 py-3 text-sm text-ink-500 transition-colors hover:border-flash-500/50"
+                        >
+                          <Upload className="h-4 w-4 shrink-0" />
+                          <span className="truncate">{proofFile ? proofFile.name : "Upload a screenshot or receipt"}</span>
+                        </label>
+                        <input
+                          id="proof-of-payment"
+                          type="file"
+                          accept="image/jpeg,image/png,image/webp,application/pdf"
+                          required
+                          onChange={(e) => setProofFile(e.target.files?.[0] ?? null)}
+                          className="sr-only"
+                        />
+                      </div>
+                    )}
+
                     {shippingMethod === "lalamove" && (
                       <div className="flex flex-col gap-2">
                         <p className="text-xs text-ink-500">
@@ -587,15 +678,16 @@ export default function Checkout({ open, onClose }: { open: boolean; onClose: ()
 
                     <button
                       type="submit"
-                      disabled={submitting || lalamoveIneligible || (shippingMethod === "lalamove" && !dropoffPin)}
+                      disabled={
+                        submitting ||
+                        lalamoveIneligible ||
+                        (shippingMethod === "lalamove" && !dropoffPin) ||
+                        (fulfillmentMethod === "online" && !proofFile)
+                      }
                       className="btn-shine flex items-center justify-center gap-2 rounded-full bg-flash-500 px-6 py-4 text-sm font-semibold text-cream-50 shadow-xl shadow-flash-500/35 transition-all duration-300 hover:-translate-y-0.5 hover:bg-flash-600 disabled:pointer-events-none disabled:opacity-60"
                     >
                       {submitting && <Loader2 className="h-4 w-4 animate-spin" />}
-                      {paymentPlan === "layaway"
-                        ? "Continue to down payment"
-                        : fulfillmentMethod === "cod"
-                          ? "Place order"
-                          : "Continue to payment"}
+                      {paymentPlan === "layaway" ? "Submit down payment" : "Place order"}
                     </button>
                 </>
               </form>

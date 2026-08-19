@@ -63,8 +63,32 @@ export async function fetchLalamoveQuote(dropoffPin: { lat: number; lng: number 
   return { feePhp: json.feePhp, expiresAt: json.expiresAt ?? "" };
 }
 
+export async function uploadPaymentProof(file: File): Promise<{ path: string }> {
+  const form = new FormData();
+  form.append("file", file);
+  const res = await fetch("/api/checkout/upload-proof", { method: "POST", body: form });
+  const json = (await res.json().catch(() => ({}))) as { error?: string; path?: string };
+  if (!res.ok || !json.path) {
+    throw new Error(json.error ?? "Couldn't upload your proof of payment — please try again.");
+  }
+  return { path: json.path };
+}
+
+export type PaymentQrCode = { label: string; imageUrl: string };
+
+export async function fetchPaymentQrCodes(): Promise<PaymentQrCode[]> {
+  const res = await fetch("/api/payment-qr");
+  if (!res.ok) return [];
+  try {
+    const json = (await res.json()) as { codes?: PaymentQrCode[] };
+    return json.codes ?? [];
+  } catch {
+    return [];
+  }
+}
+
 export type OrderStatusResult = {
-  status: "pending_payment" | "paid" | "cod_pending" | "fulfilled" | "cancelled" | "expired";
+  status: "pending_payment" | "pending_verification" | "paid" | "cod_pending" | "fulfilled" | "cancelled" | "expired";
   fulfillmentMethod: "online" | "cod";
   shippingMethod: ShippingMethod;
   totalPhp: number;
@@ -126,15 +150,14 @@ export async function unsubscribe(email: string): Promise<void> {
   if (!res.ok) throw new Error(json.error ?? "Couldn't unsubscribe — please try again.");
 }
 
-export async function createPayBalanceCheckout(orderId: string): Promise<{ redirect: string }> {
+export async function submitPayBalanceProof(orderId: string, proofOfPaymentUrl: string): Promise<void> {
   const res = await fetch("/api/checkout/pay-balance", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ orderId }),
+    body: JSON.stringify({ orderId, proofOfPaymentUrl }),
   });
-  const json = (await res.json().catch(() => ({}))) as { error?: string; redirect?: string };
-  if (!res.ok || !json.redirect) {
-    throw new Error(json.error ?? "Couldn't start payment — please try again.");
+  const json = (await res.json().catch(() => ({}))) as { error?: string };
+  if (!res.ok) {
+    throw new Error(json.error ?? "Couldn't submit your proof of payment — please try again.");
   }
-  return { redirect: json.redirect };
 }

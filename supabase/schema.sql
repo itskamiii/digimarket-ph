@@ -12,7 +12,7 @@ create table if not exists orders (
   fulfillment_method text not null check (fulfillment_method in ('online', 'cod')),
   payment_method text, -- 'gcash' | 'paymaya' | 'grab_pay' | 'card' | 'cod', filled in once known
   status text not null default 'pending_payment'
-    check (status in ('pending_payment', 'paid', 'cod_pending', 'fulfilled', 'cancelled', 'expired')),
+    check (status in ('pending_payment', 'pending_verification', 'paid', 'cod_pending', 'fulfilled', 'cancelled', 'expired')),
   subtotal_php integer not null,
   -- LBC: reference only, collected COD by the courier, never charged online. Lalamove:
   -- a real charge, folded into total_php and paid through PayMongo up front (Lalamove
@@ -60,6 +60,23 @@ alter table orders add column if not exists layaway_balance_php integer;
 alter table orders alter column total_php type double precision;
 alter table orders alter column layaway_balance_php type double precision;
 alter table orders add column if not exists layaway_balance_due_at timestamptz;
+
+-- PayMongo replaced with a manual QR-code + proof-of-payment flow (2026-08 — PayMongo
+-- volume counts toward a ₱500K/year tax-reporting threshold, so online payment moved
+-- off it entirely; PayMongo code stays in the repo as a dormant fallback, just unused).
+-- "online" orders are no longer instantly confirmed by a payment-gateway webhook — the
+-- customer uploads proof of payment at checkout, the order is committed immediately
+-- (same as COD: reserved indefinitely, owner notified), and 'pending_verification' means
+-- "customer says they paid, owner hasn't confirmed the proof yet." The ADD COLUMN above
+-- only sets the constraint on first creation, so an already-migrated database needs this
+-- separate drop-and-recreate to widen it, same as the shipping_method migration below.
+alter table orders drop constraint if exists orders_status_check;
+alter table orders add constraint orders_status_check
+  check (status in ('pending_payment', 'pending_verification', 'paid', 'cod_pending', 'fulfilled', 'cancelled', 'expired'));
+alter table orders add column if not exists proof_of_payment_url text;
+-- Layaway's balance payment is a second, separate proof submission from the down
+-- payment's — kept in its own column so both remain visible/auditable independently.
+alter table orders add column if not exists layaway_balance_proof_url text;
 
 create table if not exists units (
   id text primary key,

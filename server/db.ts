@@ -103,6 +103,7 @@ export type NewOrderInput = {
   layawayBalancePhp?: number | null;
   layawayBalanceDueAt?: string | null;
   nativeLanguage?: string | null;
+  proofOfPaymentUrl?: string | null;
 };
 
 export async function insertOrder(order: NewOrderInput): Promise<OrderRow> {
@@ -125,6 +126,7 @@ export async function insertOrder(order: NewOrderInput): Promise<OrderRow> {
       layaway_balance_php: order.layawayBalancePhp ?? null,
       layaway_balance_due_at: order.layawayBalanceDueAt ?? null,
       native_language: order.nativeLanguage ?? null,
+      proof_of_payment_url: order.proofOfPaymentUrl ?? null,
     })
     .select()
     .single();
@@ -220,6 +222,39 @@ export async function markOrderPaid(orderId: string, paymentMethod: string | nul
     .update({ status: "paid", payment_method: paymentMethod })
     .eq("id", orderId)
     .eq("status", "pending_payment")
+    .select("id");
+  if (error) throw error;
+  return (data ?? []).length > 0;
+}
+
+// The manual-QR equivalent of markOrderPaid — matches "pending_verification" (a fresh
+// online order awaiting the owner's proof-of-payment check) instead of "pending_payment"
+// (the old PayMongo-webhook status, kept separate rather than merged so a stray webhook
+// replay from a historical order can never accidentally verify a brand-new one or vice
+// versa). Called from the "Verify & Mark Paid" link in the owner's notification email.
+export async function verifyOrderPayment(orderId: string): Promise<boolean> {
+  const { data, error } = await getSupabase()
+    .from("orders")
+    .update({ status: "paid", payment_method: "manual_qr" })
+    .eq("id", orderId)
+    .eq("status", "pending_verification")
+    .select("id");
+  if (error) throw error;
+  return (data ?? []).length > 0;
+}
+
+// Records the customer's balance-payment proof for the owner to check — doesn't move any
+// money state itself (see verifyLayawayBalance below for that). Guarded the same way
+// api/checkout/pay-balance.ts already validates eligibility, so this only ever succeeds
+// for a real outstanding layaway balance.
+export async function submitLayawayBalanceProof(orderId: string, proofUrl: string): Promise<boolean> {
+  const { data, error } = await getSupabase()
+    .from("orders")
+    .update({ layaway_balance_proof_url: proofUrl })
+    .eq("id", orderId)
+    .eq("payment_plan", "layaway")
+    .eq("status", "paid")
+    .gt("layaway_balance_php", 0)
     .select("id");
   if (error) throw error;
   return (data ?? []).length > 0;
