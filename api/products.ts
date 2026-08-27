@@ -1,6 +1,30 @@
 import { getProducts } from "../server/db.js";
 import type { UnitRow } from "../server/types.js";
 
+// PGRST303 ("JWT issued at future") is a real, observed-in-production Supabase/Vercel
+// race condition: a freshly cold-started serverless instance's clock hasn't finished
+// syncing yet, so our (perfectly valid, static) service-role token briefly looks
+// "issued in the future" to Supabase's auth check. It's not a real fault — it clears up
+// within moments on its own — but this is the one endpoint the entire site depends on to
+// render anything, so a customer should never see a blank catalog over what's really
+// just bad timing. Short, small-count retry rather than anything fancier.
+function isTransientAuthClockSkew(err: unknown): boolean {
+  return typeof err === "object" && err !== null && "code" in err && (err as { code?: unknown }).code === "PGRST303";
+}
+
+async function getProductsWithRetry(maxAttempts = 3): ReturnType<typeof getProducts> {
+  for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+    try {
+      return await getProducts();
+    } catch (err) {
+      if (attempt === maxAttempts || !isTransientAuthClockSkew(err)) throw err;
+      console.error(`getProducts attempt ${attempt} hit PGRST303 (clock-skew race) — retrying`, err);
+      await new Promise((resolve) => setTimeout(resolve, 200 * attempt));
+    }
+  }
+  throw new Error("unreachable");
+}
+
 function toCatalogItem(unit: UnitRow) {
   return {
     id: unit.id,
@@ -29,7 +53,7 @@ function byStatusThenPriceDesc(a: UnitRow, b: UnitRow): number {
 
 export async function GET() {
   try {
-    const { units, kits } = await getProducts();
+    const { units, kits } = await getProductsWithRetry();
 
     const camcorders = units
       .filter((u) => u.category === "camcorder")
