@@ -331,7 +331,7 @@ function UnitInfoModal({
                 </button>
               )}
 
-              {item.samplePhotos && item.samplePhotos.length > 0 && (
+              {item.samplePhotos && item.samplePhotos.length > 0 ? (
                 <button
                   type="button"
                   onClick={() => onViewSamples(item)}
@@ -340,6 +340,11 @@ function UnitInfoModal({
                   <Images className="h-4 w-4" />
                   View sample photos
                 </button>
+              ) : (
+                <p className="mt-3 flex items-center justify-center gap-2 rounded-full bg-ink-900/6 px-6 py-3 text-center text-xs font-semibold text-ink-400">
+                  <Images className="h-3.5 w-3.5 shrink-0" />
+                  Sorry, sample photos are unavailable yet — coming soon!
+                </p>
               )}
             </div>
           </motion.div>
