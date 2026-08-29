@@ -457,8 +457,13 @@ export function CatalogList({ products }: { products: ProductsState }) {
   );
   // Collection chips (e.g. "28th Collection") come straight from units.badge — same
   // self-adapting pattern as brands: a chip only appears once a unit with that badge
-  // actually exists, so future collections show up here with zero code changes.
-  const digicamCollections = [...new Set(digicams.map((item) => item.badge).filter((b): b is string => Boolean(b)))];
+  // actually exists, so future collections show up here with zero code changes. Sorted
+  // newest-first by the leading ordinal number (29th before 28th) rather than whatever
+  // order units happen to come back in, so this doesn't need re-fixing every drop.
+  const collectionNumber = (badge: string): number => parseInt(badge, 10) || -1;
+  const digicamCollections = [...new Set(digicams.map((item) => item.badge).filter((b): b is string => Boolean(b)))].sort(
+    (a, b) => collectionNumber(b) - collectionNumber(a)
+  );
   const filteredDigicams =
     catalogFilter === "all"
       ? digicams
