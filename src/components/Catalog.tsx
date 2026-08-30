@@ -109,6 +109,11 @@ function CameraCard({ item, onViewInfo }: { item: CatalogItem; onViewInfo: (item
         {/* Image */}
         <div className={`relative overflow-hidden bg-gradient-to-br ${item.tint ?? "from-cream-200"} to-cream-100`}>
           {item.image ? (
+            // iOS Safari shows its native "Save Image" callout on any sustained touch-hold
+            // over an <img> by default, which raced against our own press-and-hold flip
+            // (handlePointerDown above) and won — the customer saw the OS share sheet
+            // instead of the back photo. -webkit-touch-callout: none turns that off;
+            // draggable/onContextMenu/select-none close the same gap on other browsers.
             <>
               <img
                 src={item.image}
@@ -116,7 +121,9 @@ function CameraCard({ item, onViewInfo }: { item: CatalogItem; onViewInfo: (item
                 loading="lazy"
                 width={720}
                 height={900}
-                className={`aspect-[4/4.6] w-full object-cover transition-all duration-500 ease-out group-hover:scale-[1.06] group-hover:rotate-1 ${
+                draggable={false}
+                onContextMenu={(e) => e.preventDefault()}
+                className={`aspect-[4/4.6] w-full select-none object-cover transition-all duration-500 ease-out [-webkit-touch-callout:none] group-hover:scale-[1.06] group-hover:rotate-1 ${
                   flipped ? "opacity-0" : "opacity-100"
                 }`}
               />
@@ -127,7 +134,9 @@ function CameraCard({ item, onViewInfo }: { item: CatalogItem; onViewInfo: (item
                   loading="lazy"
                   width={720}
                   height={900}
-                  className={`absolute inset-0 aspect-[4/4.6] w-full object-cover transition-all duration-500 ease-out group-hover:scale-[1.06] group-hover:rotate-1 ${
+                  draggable={false}
+                  onContextMenu={(e) => e.preventDefault()}
+                  className={`absolute inset-0 aspect-[4/4.6] w-full select-none object-cover transition-all duration-500 ease-out [-webkit-touch-callout:none] group-hover:scale-[1.06] group-hover:rotate-1 ${
                     flipped ? "opacity-100" : "opacity-0"
                   }`}
                 />
@@ -412,7 +421,11 @@ function SamplePhotoViewer({ item, onClose }: { item: CatalogItem | null; onClos
                   if (info.offset.x < -60) goTo(index + 1);
                   else if (info.offset.x > 60) goTo(index - 1);
                 }}
-                className="absolute inset-0 h-full w-full touch-pan-y object-contain"
+                draggable={false}
+                onContextMenu={(e) => e.preventDefault()}
+                // Same iOS Safari "Save Image" callout fix as CameraCard — a held-down
+                // swipe start could otherwise trigger the OS menu instead of dragging.
+                className="absolute inset-0 h-full w-full touch-pan-y select-none object-contain [-webkit-touch-callout:none]"
               />
             </AnimatePresence>
           </div>
