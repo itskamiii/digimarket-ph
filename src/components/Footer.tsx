@@ -35,7 +35,7 @@ export default function Footer() {
             </a>
             <p className="mt-5 max-w-sm text-sm leading-relaxed text-cream-100/50">
               Vintage digital cameras for the Y2K generation. Hunted down and
-              tested in Manila — shipped to your era, nationwide.
+              tested in the Philippines — shipped to your era, nationwide.
             </p>
             <div className="mt-6 flex gap-2.5">
               {SOCIALS.map((social) => (
@@ -88,7 +88,7 @@ export default function Footer() {
 
         <div className="mt-14 flex flex-col items-center justify-between gap-4 border-t border-cream-50/8 pt-8 sm:flex-row">
           <p className="font-mono text-[10px] font-bold uppercase tracking-[0.2em] text-cream-100/35">
-            © 2026 Digimarket_PH · Manila, PH · Made with 💿 &amp; flash
+            © 2026 Digimarket_PH · PH · Made with 💿 &amp; flash
           </p>
           <div className="flex gap-6">
             <a

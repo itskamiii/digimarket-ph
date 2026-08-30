@@ -123,7 +123,7 @@ export const CUSTOMER_REVIEWS = [
 export const STATS = [
   { value: 200, suffix: "+", label: "cameras shipped nationwide" },
   { value: 40, suffix: "+", label: "cities across the PH delivered" },
-  { value: 100, suffix: "%", label: "tested in Manila" },
+  { value: 100, suffix: "%", label: "tested in the Philippines" },
 ];
 
 // CatalogItem inventory (units — camcorders, digicams) now lives in Supabase —
@@ -154,7 +154,7 @@ export const FEATURES = [
   },
   {
     icon: "wrench",
-    title: "Tested & prepped in Manila",
+    title: "Tested & prepped in the Philippines",
     body: "Every unit gets a full flash test and function check before it ships. If we wouldn't gift it, we don't sell it.",
   },
   {
