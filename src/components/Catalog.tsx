@@ -517,7 +517,8 @@ export function CatalogList({ products }: { products: ProductsState }) {
         </Reveal>
         <Reveal delay={0.18}>
           <p className="text-xs leading-relaxed text-ink-400 sm:text-right">
-            Shipping fee is cash on delivery, shouldered by the buyer. Tap a camera for full details.
+            Shipping fee is cash on delivery, shouldered by the buyer. Tap a camera for full details —
+            hold the photo to peek at the back.
           </p>
         </Reveal>
       </div>
