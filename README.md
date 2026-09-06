@@ -15,12 +15,12 @@ Instagram: [@digimarket_ph](https://instagram.com/digimarket_ph)
 ## Features
 
 - Live catalog synced from Supabase — units are one-of-a-kind, kits allow quantity
-- Courier-first checkout: LBC, Lalamove, DHL, Meet up, or Pick up, each with its own payment options
+- Courier-first checkout: LBC, Lalamove, DHL, GoGoXpress, Meet up, or Pick up, each with its own payment options
 - Online payment is scan-a-QR-code + upload proof — no payment gateway. Every order is committed immediately (unit reserved, owner notified with a one-click "verify & mark paid" link); the owner checks the proof against their own GCash/Maya/bank app before it's really sold
 - Full payment or Layaway (5% reservation fee added to the price, 30% of that new total due now, balance within 30 days, paid later via a real follow-up link — same QR + proof flow both times)
 - Atomic inventory reservation so two customers can never buy the same one-of-a-kind unit
 - Searchable PH address entry with province/city lookup and postal code auto-fill
-- One email per order telling you exactly what still needs manual follow-up — courier booking, DHL rate quoting, layaway balance reminders
+- One email per order telling you exactly what still needs manual follow-up — courier booking, DHL/GoGoXpress rate quoting, layaway balance reminders
 - Real collection-drop email list (subscribe/unsubscribe both self-serve) — no third-party mailing list service
 - First-visit language prompt for international buyers — the answer rides along with their order so you know what language to reply in
 

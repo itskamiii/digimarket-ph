@@ -22,15 +22,17 @@ type ViewState =
   | { kind: "pending"; orderId: string } // PayMongo accepted the payment but our webhook hasn't landed yet
   | { kind: "cancelled" };
 
-// Item is paid at this point either way — Lalamove/DHL delivery still gets arranged
-// manually afterward (no automatic booking or rate quoting for either). "meetup"/"pickup"
-// can never reach this screen in practice (they always require fulfillmentMethod "cod",
+// Item is paid at this point either way — Lalamove/DHL/GoGoXpress delivery still gets
+// arranged manually afterward (no automatic booking or rate quoting for any of them).
+// "meetup"/"pickup" can never reach this screen in practice (they always require
+// fulfillmentMethod "cod",
 // so checkout never redirects to PayMongo for them), but the map is typed over the full
 // ShippingMethod union for exhaustiveness.
 const PAID_MESSAGE: Record<ShippingMethod, string> = {
   lbc: "Thanks for shopping the drop — we'll DM or email you shipping details shortly.",
   lalamove: "Thanks for shopping the drop — we'll DM you on Instagram to arrange your Lalamove delivery.",
   dhl: "Thanks for shopping the drop — we'll DM you on Instagram to arrange your DHL shipment.",
+  gogoxpress: "Thanks for shopping the drop — we'll DM you on Instagram to arrange your GoGoXpress shipment.",
   meetup: "Thanks for shopping the drop — we'll DM you on Instagram to set the meet-up time and place.",
   pickup: "Thanks for shopping the drop — we'll DM you on Instagram to arrange a pickup time.",
 };

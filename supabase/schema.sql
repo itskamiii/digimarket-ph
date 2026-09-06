@@ -249,3 +249,10 @@ select cron.schedule(
       and not exists (select 1 from units u where u.reserved_order_id = o.id and u.status = 'reserved');
   $$
 );
+
+-- Widen shipping_method again to add GoGoXpress — nationwide courier like LBC (real COD
+-- support), but with no live-quote API either, so its fee is relayed via DM same as
+-- LBC/DHL.
+alter table orders drop constraint if exists orders_shipping_method_check;
+alter table orders add constraint orders_shipping_method_check
+  check (shipping_method in ('lbc', 'lalamove', 'dhl', 'gogoxpress', 'meetup', 'pickup'));

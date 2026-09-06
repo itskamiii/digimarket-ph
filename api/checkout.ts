@@ -126,7 +126,7 @@ export async function POST(request: Request) {
   const nativeLanguage = cleanNativeLanguage(body.nativeLanguage);
 
   const shippingMethod = body.shippingMethod ?? "lbc";
-  if (!["lbc", "lalamove", "dhl", "meetup", "pickup"].includes(shippingMethod)) {
+  if (!["lbc", "lalamove", "dhl", "gogoxpress", "meetup", "pickup"].includes(shippingMethod)) {
     return Response.json({ error: "invalid_shipping_method" }, { status: 400 });
   }
   if (shippingMethod === "lalamove") {
@@ -191,8 +191,9 @@ export async function POST(request: Request) {
   const subtotalPhp = orderItems.reduce((sum, item) => sum + item.price * item.quantity, 0);
 
   // Lalamove's actual delivery fee is never charged through the site regardless of
-  // payment path — always settled via DM, booked manually on the owner's phone. "lbc"
-  // and "dhl" stay 0 for the same reason (weight/distance-dependent, relayed via DM).
+  // payment path — always settled via DM, booked manually on the owner's phone. "lbc",
+  // "dhl", and "gogoxpress" stay 0 for the same reason (weight/distance-dependent,
+  // relayed via DM — GoGoXpress has no live-quote API to pull a real number from either).
   // "pickup" genuinely has no fee. Only "meetup" contributes a real, known-upfront fee.
   let shippingFeePhp = 0;
   if (shippingMethod === "meetup") {

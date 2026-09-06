@@ -6,8 +6,8 @@ const formatDate = (iso: string) => new Date(iso).toLocaleDateString("en-PH", { 
 // What the owner still needs to do by hand for this order. LBC needs nothing special
 // either way (COD is standard courier procedure; online has nothing left to arrange) —
 // everything else needs manual follow-up regardless of payment path, since Lalamove
-// booking and DHL rate-quoting are never automated, and Meet up/Pick up are always
-// arranged fresh over DM.
+// booking, DHL/GoGoXpress rate-quoting are never automated, and Meet up/Pick up are
+// always arranged fresh over DM.
 function courierActionNeeded(shippingMethod: ShippingMethod, fulfillmentMethod: "online" | "cod"): string | null {
   if (shippingMethod === "lalamove") {
     return fulfillmentMethod === "online"
@@ -18,6 +18,13 @@ function courierActionNeeded(shippingMethod: ShippingMethod, fulfillmentMethod: 
     return fulfillmentMethod === "online"
       ? "Item is paid — message the customer on Instagram to get their destination and quote the DHL shipping rate."
       : "Message the customer on Instagram to arrange payment and quote DHL shipping for their destination.";
+  }
+  if (shippingMethod === "gogoxpress") {
+    // Same story as LBC (real courier COD support) except GoGoXpress has no live-quote
+    // API, so unlike LBC the fee still needs a manual look-up on their rate table either way.
+    return fulfillmentMethod === "online"
+      ? "Item is paid — look up the GoGoXpress rate for their destination and book the shipment yourself."
+      : "Look up the GoGoXpress rate for their destination and let the customer know before booking the shipment.";
   }
   if (shippingMethod === "meetup") {
     return "Message the customer on Instagram to set the meet-up time and place — cash or fund transfer plus the meet-up fee on the day.";

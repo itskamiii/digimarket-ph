@@ -42,18 +42,18 @@ function friendlyError(message: string): string {
   return ERROR_MESSAGES[message] ?? "Something went wrong on our end — please try again.";
 }
 
-type ShippingMethod = "lbc" | "lalamove" | "dhl" | "meetup" | "pickup";
-const SHIPPING_METHODS = ["lbc", "lalamove", "dhl", "meetup", "pickup"] as const;
+type ShippingMethod = "lbc" | "lalamove" | "dhl" | "gogoxpress" | "meetup" | "pickup";
+const SHIPPING_METHODS = ["lbc", "lalamove", "dhl", "gogoxpress", "meetup", "pickup"] as const;
 // Meet up / Pick up are in-person exchanges, not couriers — there's no "pay online now"
 // alternative for them at all, so the payment-method section is hidden entirely and
 // fulfillmentMethod is forced to "cod" the moment one is selected (see the effect below).
 const IN_PERSON_METHODS = new Set<ShippingMethod>(["meetup", "pickup"]);
 
 // The COD-style second payment option is courier-specific in both label and mechanics:
-// all three couriers skip PayMongo and become a committed order the moment it's
-// submitted (same indefinite-hold behavior). LBC's actual shipping fee (weight/distance-
-// dependent, no live rate available) is never computed by the site either way — always
-// relayed via DM, collected as COD on delivery.
+// every courier skips PayMongo and becomes a committed order the moment it's submitted
+// (same indefinite-hold behavior). LBC's and GoGoXpress's actual shipping fee (weight/
+// distance-dependent, no live rate available for either) is never computed by the site
+// either way — always relayed via DM, collected as COD on delivery.
 function secondPaymentOption(shippingMethod: ShippingMethod): { label: string; hint: string } {
   if (shippingMethod === "lalamove") {
     return { label: "Fund transfer upon delivery", hint: "GCash/bank transfer — final SF via DM" };
@@ -68,6 +68,7 @@ const COURIER_LABELS: Record<ShippingMethod, string> = {
   lbc: "LBC",
   lalamove: "Lalamove",
   dhl: "DHL",
+  gogoxpress: "GoGoXpress",
   meetup: "Meet up",
   pickup: "Pick up",
 };
@@ -76,6 +77,7 @@ const COURIER_HINTS: Record<ShippingMethod, string> = {
   lbc: "Nationwide, 1–7 days",
   lalamove: "Same-day, NCR only",
   dhl: "Outside the Philippines",
+  gogoxpress: "Nationwide, 1–7 days",
   meetup: "₱250 in Rizal, ₱300 elsewhere",
   pickup: "No fee — at our location",
 };
@@ -104,6 +106,7 @@ const COD_CONFIRMATION_TEXT: Record<ShippingMethod, string> = {
   lalamove:
     "We've reserved your unit(s). We'll settle everything via DM on Instagram — confirming your fund transfer, booking your Lalamove rider, and sending you the delivery details.",
   dhl: "We've reserved your unit(s). We'll settle everything via DM on Instagram — confirming payment and quoting your DHL shipping rate.",
+  gogoxpress: "We've reserved your unit(s). Pay the courier on delivery. We'll DM/email you shipping details shortly.",
   meetup:
     "We've reserved your unit(s). We'll DM you on Instagram to set the meet-up time and place — cash or fund transfer plus the meet-up fee on the day.",
   pickup:
@@ -504,7 +507,7 @@ export default function Checkout({ open, onClose }: { open: boolean; onClose: ()
                           <span className="text-sm font-semibold text-ink-900">Via DM</span>
                         </div>
                       )}
-                      {shippingMethod === "lbc" && (
+                      {(shippingMethod === "lbc" || shippingMethod === "gogoxpress") && (
                         <div className="mt-1.5 flex items-center justify-between">
                           <span className="text-sm text-ink-500">SF</span>
                           <span className="text-sm font-semibold text-ink-900">

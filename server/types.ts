@@ -52,9 +52,11 @@ export type CheckoutItemInput = {
 };
 
 // "meetup"/"pickup" are in-person exchanges (no courier at all) — always cash or fund
-// transfer at the exchange, never paid through PayMongo. "dhl" checkout does offer, but
-// its own real shipping cost is still quoted manually since there's no live rate API yet.
-export type ShippingMethod = "lbc" | "lalamove" | "dhl" | "meetup" | "pickup";
+// transfer at the exchange, never paid through PayMongo. "dhl" and "gogoxpress" checkout
+// does offer, but their own real shipping cost is still quoted manually since neither has
+// a live rate API (GoGoXpress has no public API at all for a site like this one — only a
+// Shopify plugin).
+export type ShippingMethod = "lbc" | "lalamove" | "dhl" | "gogoxpress" | "meetup" | "pickup";
 
 export type LatLng = { lat: number; lng: number };
 
