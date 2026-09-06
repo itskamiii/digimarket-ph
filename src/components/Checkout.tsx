@@ -21,6 +21,8 @@ type PhAddress = { province: string; city: string; zip: string };
 const PH_ADDRESSES = phAddresses as PhAddress[];
 const PROVINCES = [...new Set(PH_ADDRESSES.map((a) => a.province))].sort();
 
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
 const ERROR_MESSAGES: Record<string, string> = {
   invalid_customer: "Please fill in your name, email, and phone number.",
   invalid_shipping: "Please fill in a complete shipping address.",
@@ -248,24 +250,71 @@ export default function Checkout({ open, onClose }: { open: boolean; onClose: ()
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [confirmedOrderId, setConfirmedOrderId] = useState<string | null>(null);
+  // Which required fields are currently missing/invalid, keyed by the `field-*` ids on
+  // each field's wrapper (see FIELD_ERRORS below) — populated on a failed submit attempt
+  // so the offending field(s) get a visible highlight and the form scrolls to the first
+  // one, since this is a fixed/scrollable modal where native HTML5 validation's own
+  // scroll-into-view has proven unreliable (a real customer got stuck on a silent
+  // "nothing happens" submit because of it).
+  const [invalidFields, setInvalidFields] = useState<Set<string>>(new Set());
+
+  // A field's highlight clears itself the moment it becomes valid, rather than waiting
+  // for the next submit attempt — immediate feedback once the customer fixes it.
+  useEffect(() => {
+    if (invalidFields.size === 0) return;
+    setInvalidFields((prev) => {
+      const next = new Set(prev);
+      if (name.trim()) next.delete("name");
+      if (phone.trim()) next.delete("phone");
+      if (email.trim() && EMAIL_RE.test(email.trim())) next.delete("email");
+      if (line1.trim()) next.delete("line1");
+      if (province.trim()) next.delete("province");
+      if (city.trim()) next.delete("city");
+      if (postalCode.trim()) next.delete("postalCode");
+      if (dropoffPin) next.delete("dropoffPin");
+      if (proofFile) next.delete("proof");
+      return next;
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [name, phone, email, line1, province, city, postalCode, dropoffPin, proofFile]);
+
+  function findMissingFields(): string[] {
+    const missing: string[] = [];
+    if (!name.trim()) missing.push("name");
+    if (!phone.trim()) missing.push("phone");
+    if (!email.trim() || !EMAIL_RE.test(email.trim())) missing.push("email");
+    if (!line1.trim()) missing.push("line1");
+    if (!province.trim()) missing.push("province");
+    if (!city.trim()) missing.push("city");
+    if (!postalCode.trim()) missing.push("postalCode");
+    if (shippingMethod === "lalamove" && !dropoffPin) missing.push("dropoffPin");
+    if (fulfillmentMethod === "online" && !proofFile) missing.push("proof");
+    return missing;
+  }
 
   const onSubmit = async (e: FormEvent) => {
     e.preventDefault();
     if (items.length === 0 || submitting) return;
-    if (shippingMethod === "lalamove") {
-      if (lalamoveIneligible) {
-        setError("Lalamove is only available within Metro Manila — please choose LBC or DHL instead.");
-        return;
-      }
-      if (!dropoffPin) {
-        setError("Please drop a pin at your exact delivery location.");
-        return;
-      }
-    }
-    if (fulfillmentMethod === "online" && !proofFile) {
-      setError("Please upload your proof of payment.");
+    if (shippingMethod === "lalamove" && lalamoveIneligible) {
+      setError("Lalamove is only available within Metro Manila — please choose LBC or DHL instead.");
       return;
     }
+    const missing = findMissingFields();
+    if (missing.length > 0) {
+      setInvalidFields(new Set(missing));
+      setError(
+        missing.length > 1
+          ? "Please fill in the highlighted fields below."
+          : "Please fill in the highlighted field below."
+      );
+      const target = document.getElementById(`field-${missing[0]}`);
+      target?.scrollIntoView({ behavior: "smooth", block: "center" });
+      window.setTimeout(() => {
+        target?.querySelector<HTMLElement>("input, textarea, button")?.focus({ preventScroll: true });
+      }, 300);
+      return;
+    }
+    setInvalidFields(new Set());
     setSubmitting(true);
     setError(null);
 
@@ -312,6 +361,7 @@ export default function Checkout({ open, onClose }: { open: boolean; onClose: ()
     setPaymentPlan(null);
     setProofFile(null);
     setExpandedQr(null);
+    setInvalidFields(new Set());
     onClose();
   };
 
@@ -405,7 +455,7 @@ export default function Checkout({ open, onClose }: { open: boolean; onClose: ()
                 </p>
               </div>
             ) : (
-              <form onSubmit={onSubmit} className="flex flex-col gap-5 px-6 py-6">
+              <form onSubmit={onSubmit} noValidate className="flex flex-col gap-5 px-6 py-6">
                 <>
                     <button
                       type="button"
@@ -535,7 +585,14 @@ export default function Checkout({ open, onClose }: { open: boolean; onClose: ()
                     )}
 
                     {fulfillmentMethod === "online" && (
-                      <div className="rounded-2xl border border-ink-900/8 bg-cream-100/60 p-4">
+                      <div
+                        id="field-proof"
+                        className={`rounded-2xl border p-4 transition-colors ${
+                          invalidFields.has("proof")
+                            ? "border-flash-500 bg-flash-500/5 ring-1 ring-flash-500/40"
+                            : "border-ink-900/8 bg-cream-100/60"
+                        }`}
+                      >
                         <p className="text-xs font-bold uppercase tracking-[0.14em] text-ink-400">
                           Scan to pay {formatPeso(dueTodayPhp)}
                         </p>
@@ -582,15 +639,31 @@ export default function Checkout({ open, onClose }: { open: boolean; onClose: ()
                           onChange={(e) => setProofFile(e.target.files?.[0] ?? null)}
                           className="sr-only"
                         />
+                        {invalidFields.has("proof") && (
+                          <p className="mt-1.5 text-[11px] font-medium text-flash-600">
+                            Please upload your proof of payment.
+                          </p>
+                        )}
                       </div>
                     )}
 
                     {shippingMethod === "lalamove" && (
-                      <div className="flex flex-col gap-2">
+                      <div id="field-dropoffPin" className="flex flex-col gap-2">
                         <p className="text-xs text-ink-500">
                           Drop a pin at your exact delivery location — tap the map, or drag the pin once it's placed.
                         </p>
-                        <LalamovePinPicker value={dropoffPin} onChange={setDropoffPin} />
+                        <div
+                          className={`rounded-2xl transition-shadow ${
+                            invalidFields.has("dropoffPin") ? "ring-2 ring-flash-500 ring-offset-2 ring-offset-cream-50" : ""
+                          }`}
+                        >
+                          <LalamovePinPicker value={dropoffPin} onChange={setDropoffPin} />
+                        </div>
+                        {invalidFields.has("dropoffPin") && (
+                          <p className="text-xs font-medium text-flash-600">
+                            Please drop a pin at your exact delivery location.
+                          </p>
+                        )}
                         {lalamoveQuoteLoading && <p className="text-xs text-ink-400">Getting a delivery estimate…</p>}
                         {lalamoveQuoteError && <p className="text-xs text-flash-600">{lalamoveQuoteError}</p>}
                         {lalamoveFeePhp !== null && (
@@ -603,14 +676,17 @@ export default function Checkout({ open, onClose }: { open: boolean; onClose: ()
 
                     <div className="grid gap-3 sm:grid-cols-2">
                       <Field
+                        id="field-name"
                         label="Full name"
                         value={name}
                         onChange={setName}
                         autoComplete="name"
                         placeholder="Juan Dela Cruz"
                         required
+                        invalid={invalidFields.has("name")}
                       />
                       <Field
+                        id="field-phone"
                         label="Phone"
                         value={phone}
                         onChange={setPhone}
@@ -618,9 +694,11 @@ export default function Checkout({ open, onClose }: { open: boolean; onClose: ()
                         autoComplete="tel"
                         placeholder="09171234567"
                         required
+                        invalid={invalidFields.has("phone")}
                       />
                     </div>
                     <Field
+                      id="field-email"
                       label="Email"
                       value={email}
                       onChange={setEmail}
@@ -628,14 +706,18 @@ export default function Checkout({ open, onClose }: { open: boolean; onClose: ()
                       autoComplete="email"
                       placeholder="juan@gmail.com"
                       required
+                      invalid={invalidFields.has("email")}
+                      errorMessage={email.trim() ? "Please enter a valid email address." : undefined}
                     />
                     <Field
+                      id="field-line1"
                       label="Address line 1"
                       value={line1}
                       onChange={setLine1}
                       autoComplete="address-line1"
                       placeholder="123 Sampaguita St., Brgy. San Isidro"
                       required
+                      invalid={invalidFields.has("line1")}
                     />
                     <Field
                       label="Address line 2 (optional)"
@@ -646,28 +728,34 @@ export default function Checkout({ open, onClose }: { open: boolean; onClose: ()
                     />
                     <div className="grid gap-3 sm:grid-cols-3">
                       <Combobox
+                        id="field-province"
                         label="Province"
                         value={province}
                         onSelect={selectProvince}
                         options={PROVINCES}
                         placeholder="Search province…"
                         required
+                        invalid={invalidFields.has("province")}
                       />
                       <Combobox
+                        id="field-city"
                         label="City / Municipality"
                         value={city}
                         onSelect={selectCity}
                         options={cityOptions}
                         placeholder="Search city…"
                         required
+                        invalid={invalidFields.has("city")}
                       />
                       <Field
+                        id="field-postalCode"
                         label="Postal code"
                         value={postalCode}
                         onChange={setPostalCode}
                         autoComplete="postal-code"
                         placeholder="1000"
                         required
+                        invalid={invalidFields.has("postalCode")}
                       />
                     </div>
 
@@ -720,6 +808,7 @@ function RequiredMark() {
 }
 
 function Field({
+  id,
   label,
   value,
   onChange,
@@ -727,7 +816,10 @@ function Field({
   autoComplete,
   placeholder,
   required,
+  invalid,
+  errorMessage,
 }: {
+  id?: string;
   label: string;
   value: string;
   onChange: (value: string) => void;
@@ -735,9 +827,11 @@ function Field({
   autoComplete?: string;
   placeholder?: string;
   required?: boolean;
+  invalid?: boolean;
+  errorMessage?: string;
 }) {
   return (
-    <label className="flex flex-col gap-1.5 text-sm">
+    <label id={id} className="flex flex-col gap-1.5 text-sm">
       <span className="text-xs font-medium text-ink-500">
         {label}
         {required && <RequiredMark />}
@@ -749,8 +843,18 @@ function Field({
         autoComplete={autoComplete}
         placeholder={placeholder}
         required={required}
-        className="rounded-xl border border-ink-900/10 bg-cream-50 px-4 py-2.5 text-sm text-ink-900 placeholder:text-ink-400/50 transition-colors focus:border-flash-500/60 focus:outline-none"
+        aria-invalid={invalid || undefined}
+        className={`rounded-xl border bg-cream-50 px-4 py-2.5 text-sm text-ink-900 placeholder:text-ink-400/50 transition-colors focus:outline-none ${
+          invalid
+            ? "border-flash-500 ring-1 ring-flash-500/40 focus:border-flash-500"
+            : "border-ink-900/10 focus:border-flash-500/60"
+        }`}
       />
+      {invalid && (
+        <span className="text-[11px] font-medium text-flash-600">
+          {errorMessage ?? "Please fill in this field."}
+        </span>
+      )}
     </label>
   );
 }
@@ -759,19 +863,23 @@ function Field({
 // via onSelect (picking an option) — this keeps City/Province constrained to the real
 // PH address dataset instead of accepting arbitrary typed text.
 function Combobox({
+  id,
   label,
   value,
   onSelect,
   options,
   placeholder,
   required,
+  invalid,
 }: {
+  id?: string;
   label: string;
   value: string;
   onSelect: (value: string) => void;
   options: string[];
   placeholder?: string;
   required?: boolean;
+  invalid?: boolean;
 }) {
   const [query, setQuery] = useState("");
   const [open, setOpen] = useState(false);
@@ -783,7 +891,7 @@ function Combobox({
   }, [query, options]);
 
   return (
-    <div className="relative flex flex-col gap-1.5 text-sm">
+    <div id={id} className="relative flex flex-col gap-1.5 text-sm">
       <span className="text-xs font-medium text-ink-500">
         {label}
         {required && <RequiredMark />}
@@ -803,8 +911,16 @@ function Combobox({
         placeholder={placeholder}
         autoComplete="off"
         required={required}
-        className="rounded-xl border border-ink-900/10 bg-cream-50 px-4 py-2.5 text-sm text-ink-900 placeholder:text-ink-400/50 transition-colors focus:border-flash-500/60 focus:outline-none"
+        aria-invalid={invalid || undefined}
+        className={`rounded-xl border bg-cream-50 px-4 py-2.5 text-sm text-ink-900 placeholder:text-ink-400/50 transition-colors focus:outline-none ${
+          invalid
+            ? "border-flash-500 ring-1 ring-flash-500/40 focus:border-flash-500"
+            : "border-ink-900/10 focus:border-flash-500/60"
+        }`}
       />
+      {invalid && (
+        <span className="text-[11px] font-medium text-flash-600">Please fill in this field.</span>
+      )}
       {open && filtered.length > 0 && (
         <ul className="absolute inset-x-0 top-full z-20 mt-1 max-h-52 overflow-y-auto rounded-xl border border-ink-900/10 bg-cream-50 py-1 shadow-lg shadow-ink-900/10">
           {filtered.map((opt) => (
