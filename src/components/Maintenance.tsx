@@ -1,5 +1,5 @@
 import { Wrench } from "lucide-react";
-import logo from "../assets/logo.png";
+import logoText from "../assets/logo-text.png";
 import { Reveal } from "./Reveal";
 
 // lucide-react dropped brand icons a while back — same inline Instagram glyph Footer.tsx uses.
@@ -26,16 +26,15 @@ export default function Maintenance() {
       </div>
 
       <Reveal className="relative mx-auto flex max-w-xl flex-col items-center">
+        {/* Just the pixel-art wordmark, cropped out of logo.png with its cream circle
+            and white backing removed — inverted white-on-transparent so it reads
+            against this dark background, and left to float free with no badge/circle
+            around it. */}
         <img
-          src={logo}
-          alt="Digimarket_PH"
-          className="h-16 w-16 rounded-full shadow-lg shadow-flash-500/30"
-          width={64}
-          height={64}
+          src={logoText}
+          alt="Digimarket — by Tomi & Kami"
+          className="w-64 invert animate-float-slow drop-shadow-[0_8px_30px_rgba(255,77,0,0.35)] sm:w-80"
         />
-        <span className="mt-6 font-display text-xl font-bold tracking-tight text-cream-50">
-          digimarket<span className="text-flash-400">_ph</span>
-        </span>
 
         <span className="mt-8 inline-flex items-center gap-2 rounded-full border border-cream-50/15 bg-cream-50/5 px-4 py-2 font-mono text-[11px] font-bold uppercase tracking-[0.22em] text-flash-400 backdrop-blur">
           <Wrench className="h-3.5 w-3.5" />
