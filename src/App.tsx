@@ -8,6 +8,7 @@ import Features from "./components/Features";
 import Footer from "./components/Footer";
 import Hero from "./components/Hero";
 import LanguagePrompt from "./components/LanguagePrompt";
+import Maintenance from "./components/Maintenance";
 import Navbar from "./components/Navbar";
 import OrderStatus from "./components/OrderStatus";
 import PayBalance from "./components/PayBalance";
@@ -16,6 +17,7 @@ import SocialProof from "./components/SocialProof";
 import Testimonials from "./components/Testimonials";
 import { CartProvider, useCart } from "./context/CartContext";
 import { useProducts } from "./hooks/useProducts";
+import { MAINTENANCE_MODE } from "./lib/maintenance";
 
 function AppShell() {
   const { closeCart } = useCart();
@@ -58,6 +60,10 @@ function AppShell() {
 }
 
 export default function App() {
+  // Whole product-driven site is skipped while this is on, so nothing here ever tries
+  // to call the (currently 402'd) Supabase API — see src/lib/maintenance.ts.
+  if (MAINTENANCE_MODE) return <Maintenance />;
+
   return (
     <CartProvider>
       <AppShell />
