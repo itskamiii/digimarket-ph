@@ -1,4 +1,5 @@
 import { getProducts } from "../server/db.js";
+import { localizeImageUrl } from "../server/localImageUrl.js";
 import type { UnitRow } from "../server/types.js";
 
 // PGRST303 ("JWT issued at future") is a real, observed-in-production Supabase/Vercel
@@ -34,9 +35,12 @@ function toCatalogItem(unit: UnitRow) {
     badge: unit.badge ?? undefined,
     bestFor: unit.best_for ?? undefined,
     availability: unit.status,
-    image: unit.image_url ?? undefined,
-    imageBack: unit.image_back_url ?? undefined,
-    samplePhotos: unit.sample_photo_urls && unit.sample_photo_urls.length > 0 ? unit.sample_photo_urls : undefined,
+    image: localizeImageUrl(unit.image_url),
+    imageBack: localizeImageUrl(unit.image_back_url),
+    samplePhotos:
+      unit.sample_photo_urls && unit.sample_photo_urls.length > 0
+        ? unit.sample_photo_urls.map(localizeImageUrl)
+        : undefined,
     tint: unit.tint ?? "from-cream-200",
     description: unit.description ?? undefined,
   };

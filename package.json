@@ -8,7 +8,8 @@
     "build": "vite build",
     "preview": "vite preview",
     "seed": "tsx scripts/seed.ts",
-    "backup": "tsx scripts/backup-db.ts"
+    "backup": "tsx scripts/backup-db.ts",
+    "sync-images": "tsx scripts/sync-images.ts"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.48.0",

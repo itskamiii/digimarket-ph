@@ -35,7 +35,7 @@ api/                          Vercel serverless functions — capped at 11 of Ve
   checkout/                     Sub-endpoints — Lalamove fee preview, upload proof of payment,
                                  submit a layaway balance payment, verify a payment/balance/
                                  cancel (?action=, ?balance=1 — see verify.ts)
-  payment-qr.ts                 Lists whatever QR codes are in storage (unit-photos/payment-qr/)
+  payment-qr.ts                 Lists whatever QR codes are mirrored in storage (unit-photos/payment-qr/)
   webhooks/paymongo.ts          PayMongo payment webhook — dormant, kept as a fallback
   cron/                         Scheduled jobs — layaway balance reminders
   order-status.ts               Order + layaway balance lookup (?view=balance) — unauthenticated,
@@ -51,8 +51,12 @@ server/                       Shared server-side logic imported by api/ function
 src/                          React app
   components/, context/, hooks/, lib/
 
+public/unit-photos/            Mirror of the Supabase Storage bucket of the same name — see
+                                "Images" below. Committed to git and served directly by
+                                Vercel, not fetched from Supabase at runtime
+
 supabase/schema.sql            Full database schema — run once in the Supabase SQL Editor
-scripts/                       One-off scripts (seeding, backups) — run locally with tsx
+scripts/                       One-off scripts (seeding, backups, image sync) — run locally with tsx
 ```
 
 ## Local development
@@ -72,6 +76,20 @@ See `.env.example` for the full list. Everything is server-only except `VITE_FOR
 ### Database
 
 Run `supabase/schema.sql` once in the Supabase SQL Editor. It's safe to re-run — every statement is guarded with `IF NOT EXISTS`/`OR REPLACE`.
+
+### Images
+
+Unit photos and payment QR codes are served straight from this repo (`public/unit-photos/`), not fetched from Supabase at runtime — Supabase Storage hit its free-tier egress cap once already from exactly that traffic (Sep 2026), and Vercel's own 100GB/month allowance has way more headroom for it.
+
+Supabase Storage (`unit-photos` bucket) stays the source of truth — the `units` table's `image_url`/`image_back_url`/`sample_photo_urls` columns still store the real Supabase Storage URL, same as before. `server/localImageUrl.ts` rewrites those to root-relative paths (`/unit-photos/...`) before they ever reach the client; `public/unit-photos/` just needs to actually contain the file at that path.
+
+So after uploading new/replaced photos to Supabase Storage (a new collection, a swapped photo, a new QR code), run:
+
+```bash
+npm run sync-images
+```
+
+then commit whatever changed under `public/unit-photos/` and push — that commit-and-redeploy is the one extra step this costs over the old "upload to Supabase and it's instantly live" flow.
 
 ## Deployment
 

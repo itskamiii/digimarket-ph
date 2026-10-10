@@ -1,3 +1,4 @@
+import { localizeImageUrl } from "../server/localImageUrl.js";
 import { getSupabase } from "../server/supabase.js";
 
 // Payment QR codes (GCash, Maya, bank transfer, etc.) live in the public unit-photos
@@ -48,7 +49,7 @@ export async function GET() {
       .filter((f) => /\.(jpe?g|png|webp)$/i.test(f.name))
       .map((f) => {
         const { data: pub } = getSupabase().storage.from("unit-photos").getPublicUrl(`${FOLDER}/${f.name}`);
-        return { label: labelFromFilename(f.name), imageUrl: pub.publicUrl };
+        return { label: labelFromFilename(f.name), imageUrl: localizeImageUrl(pub.publicUrl) };
       });
 
     return Response.json({ codes }, { headers: { "Cache-Control": "s-maxage=60, stale-while-revalidate=300" } });
