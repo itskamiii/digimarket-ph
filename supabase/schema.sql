@@ -256,3 +256,18 @@ select cron.schedule(
 alter table orders drop constraint if exists orders_shipping_method_check;
 alter table orders add constraint orders_shipping_method_check
   check (shipping_method in ('lbc', 'lalamove', 'dhl', 'gogoxpress', 'meetup', 'pickup'));
+
+-- Supabase stops auto-granting Data API access to NEW tables in "public" from Oct 30,
+-- 2026 onward (existing tables are unaffected and keep their current grants — this
+-- project's live tables need no action). This project only ever talks to Supabase via
+-- the service-role key (no anon/authenticated client-side usage anywhere), so that's
+-- the only role that needs a grant — added here so re-running this file against a
+-- fresh/empty project (disaster recovery, a new environment) wires up API access
+-- immediately instead of silently permission-denied-ing. Plain GRANT is idempotent —
+-- safe to re-run, like everything else in this file.
+grant select, insert, update, delete on public.orders to service_role;
+grant select, insert, update, delete on public.units to service_role;
+grant select, insert, update, delete on public.kits to service_role;
+grant select, insert, update, delete on public.order_items to service_role;
+grant select, insert, update, delete on public.subscribers to service_role;
+grant select, insert, update, delete on public.checkout_attempts to service_role;
